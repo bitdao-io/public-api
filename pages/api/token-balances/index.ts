@@ -13,7 +13,7 @@ const BITDAO_LP_WALLET_ADDRESS = "0x5C128d25A21f681e678cB050E551A895c9309945";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    let alchemyApi = req.query.alchemyApi;
+    const alchemyApi = req.query.alchemyApi;
     if (!alchemyApi) {
       res.json({
         success: false,

@@ -20,7 +20,7 @@ const ETH_DECIMALS = 18;
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     let addresses = undefined;
-    let alchemyApi = req.query.alchemyApi;
+    const alchemyApi = req.query.alchemyApi;
     console.log(req.query);
     if (!alchemyApi) {
       res.json({
