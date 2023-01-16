@@ -23,7 +23,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const alchemyApi = req.query.alchemyApi;
     console.log(req.query);
     if (!alchemyApi) {
-      res.json({
+      return res.json({
         success: false,
         statusCode: 500,
         message: "alchemyApi not provided",
