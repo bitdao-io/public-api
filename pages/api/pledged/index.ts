@@ -29,9 +29,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     data.body.list.shift();
 
     // get the total amount contributed to date...
-    const result = data.body.list.reduce((total, row) => {
-      return total + row.contributeVolume;
-    }, 0);
+    const result = {
+      total: data.body.list.reduce((total, row) => {
+        return total + row.contributeVolume;
+      }, 0),
+      history: data.body.list
+    };
 
     // set up response...
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -53,7 +56,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      total: result,
+      result: result,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

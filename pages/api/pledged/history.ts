@@ -50,7 +50,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      entries: data.body.list,
+      results: data.body.list,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
