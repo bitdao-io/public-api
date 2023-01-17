@@ -2,7 +2,9 @@ import {
   NextApiRequest,
   NextApiResponse
 } from "next";
-import { getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
+import {
+  getAnalyticsDataRecursivelyFrom
+} from "@/services/analytics";
 
 // - Constants
 const CACHE_TIME = 1800;
@@ -15,7 +17,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // fetch all data (from cache if available)
     const data = await getAnalyticsDataRecursivelyFrom(timestamp);
-    
+
     // no data then 500
     if (!data) {
       return res.json({
@@ -27,11 +29,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // first result in the raw csv file is always incomplete...
     data.body.list.shift();
-
-    // get the total amount contributed to date...
-    const result = data.body.list.reduce((total, row) => {
-      return total + row.contributeVolume;
-    }, 0);
 
     // set up response...
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -53,7 +50,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      total: result,
+      entries: data.body.list,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
