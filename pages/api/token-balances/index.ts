@@ -1,15 +1,18 @@
 import { Alchemy, Network } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
+import {
+  BIT_CONTRACT_ADDRESS,
+  BIT_BURN_ADDRESS,
+  BITDAO_TREASURY_ADDRESS,
+  BITDAO_LP_WALLET_ADDRESS
+} from "config/general";
+
 const CACHE_TIME = 1800;
 const alchemySettings = {
   apiKey: "", // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
 };
-const BIT_CONTRACT_ADDRESS = "0x1A4b46696b2bB4794Eb3D4c26f1c55F9170fa4C5";
-const BIT_BURN_ADDRESS = "0x000000000000000000000000000000000000dead";
-const BITDAO_TREASURY_ADDRESS = "0x78605Df79524164911C144801f41e9811B7DB73D";
-const BITDAO_LP_WALLET_ADDRESS = "0x5C128d25A21f681e678cB050E551A895c9309945";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -21,6 +24,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         message: "alchemyApi not provided",
       });
     }
+
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Access-Control-Allow-Headers",
@@ -33,11 +37,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       );
       return res.status(200).json({});
     }
+
     alchemySettings.apiKey = String(req.query.alchemyApi);
 
     const alchemy = new Alchemy(alchemySettings);
 
-    // const [accountAddress, ...tokenContractAddresses] = addresses;
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
         BIT_CONTRACT_ADDRESS,
