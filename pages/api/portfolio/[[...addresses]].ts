@@ -56,32 +56,35 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     alchemySettings.apiKey = String(req.query.alchemyApi);
 
-    let totalBalances: Array<TokenBalance> = [];
     const alchemy = new Alchemy(alchemySettings);
-    for (const address of addresses) {
-      // TODO: parallelize this: check all `await` cases
-      const balances = await alchemy.core.getTokenBalances(address);
-      totalBalances = [...totalBalances, ...balances.tokenBalances];
-    }
+    
+    const [balancesSet, ethBalanceInBigNumber, { ethereum }] =
+      await Promise.all([
+        Promise.all(
+          addresses.map(async (item) => {
+            return await alchemy.core.getTokenBalances(
+              item
+            )
+          })
+        ),
+        alchemy.core.getBalance(addresses[0]),
+        fetch(
+          `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
+        ).then(async (response) => await response.json()),
+      ])
 
+    let totalBalances: Array<TokenBalance> = []
+    for (const item of balancesSet) {
+      totalBalances = [...totalBalances, ...item.tokenBalances]
+    }
     const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
       return token.tokenBalance !== HashZero;
-    });
+    })
 
-    const ethBalanceInBigNumber = await alchemy.core.getBalance(addresses[0]);
     // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
     const ethBalanceInNumber = Number(
       formatUnits(ethBalanceInBigNumber, ETH_DECIMALS)
     );
-
-    const tokensAddresses = nonZeroTokenBalances.map(
-      (token: TokenBalance) => token.contractAddress
-    );
-
-    const ethUSDPriceResponse = await fetch(
-      `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
-    );
-    const { ethereum } = await ethUSDPriceResponse.json(); // TODO: type it
 
     const ethToken: TreasuryToken = {
       address: "eth",
@@ -94,44 +97,49 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       value: ethBalanceInNumber * ethereum.usd,
     };
 
+    const tokensAddresses = nonZeroTokenBalances.map(
+      (token: TokenBalance) => token.contractAddress
+    )
     const tokenUSDPricesResponse = await fetch(
       `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD`
-    );
+    )
     const tokenUSDPrices = await tokenUSDPricesResponse.json(); // TODO: type it
 
     const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
       (token: TokenBalance) => {
         return tokenUSDPrices[token.contractAddress]?.usd;
       }
-    );
+    )
+
+    const metadataSet = await Promise.all(
+      withPriceNonZeroBalances.map((item) =>
+        alchemy.core.getTokenMetadata(item.contractAddress)
+      )
+    )
 
     let totalValueInUSD = 0;
-    const erc20Tokens = [];
-    for (const item of withPriceNonZeroBalances) {
+    const erc20Tokens: Array<TreasuryToken> = []
+    withPriceNonZeroBalances.forEach((item, index) => {
       const balanceInString = item.tokenBalance;
 
-      const metadata = await alchemy.core.getTokenMetadata(
-        item.contractAddress
-      );
-
       const balanceInNumber = balanceInString
-        ? Number(formatUnits(balanceInString, metadata.decimals || 18))
+        ? Number(formatUnits(balanceInString, metadataSet[index].decimals || 18))
         : 0;
 
       const erc20Token: TreasuryToken = {
         address: item.contractAddress,
         amount: balanceInNumber,
-        name: metadata.name ?? "",
-        symbol: metadata.symbol ?? "",
-        decimals: metadata.decimals ?? 18, // TODO: double-check it
-        logo: metadata.logo ?? "",
+        name: metadataSet[index].name ?? "",
+        symbol: metadataSet[index].symbol ?? "",
+        decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
+        logo: metadataSet[index].logo ?? "",
         price: tokenUSDPrices[item.contractAddress].usd,
         value: balanceInNumber * tokenUSDPrices[item.contractAddress].usd,
       };
 
-      erc20Tokens.push(erc20Token);
-      totalValueInUSD += erc20Token.value;
-    }
+      erc20Tokens.push(erc20Token)
+      totalValueInUSD += erc20Token.value
+    })
 
     totalValueInUSD += ethToken.value;
     const portfolio = [...erc20Tokens, ethToken];
