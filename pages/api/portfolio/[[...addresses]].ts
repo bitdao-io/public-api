@@ -3,13 +3,16 @@ import { formatUnits } from "@ethersproject/units";
 import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
+import {
+  BITDAO_TREASURY_ADDRESS,
+  BITDAO_LP_WALLET_ADDRESS
+} from 'config/general';
 import { TreasuryToken } from "types/treasury.d";
 
 const CACHE_TIME = 1800;
 const COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/";
 const alchemySettings = {
-  apiKey: "",
-  // apiKey: process.env.ALCHEMY_API_KEY, // Replace with your Alchemy API Key.
+  apiKey: "", // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
 };
 const ETH_DECIMALS = 18;
@@ -19,9 +22,7 @@ const ETH_DECIMALS = 18;
 // - https://docs.alchemy.com/docs/how-to-get-all-tokens-owned-by-an-address
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    let addresses = undefined;
     const alchemyApi = req.query.alchemyApi;
-    console.log(req.query);
     if (!alchemyApi) {
       return res.json({
         success: false,
@@ -29,12 +30,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         message: "alchemyApi not provided",
       });
     }
+
+    let addresses = undefined;
     if (req.query.addresses) {
       addresses = (req.query.addresses[0] as string).split(",");
     } else {
       addresses = [
-        "0x78605Df79524164911C144801f41e9811B7DB73D",
-        "0x5C128d25A21f681e678cB050E551A895c9309945",
+        BITDAO_TREASURY_ADDRESS,
+        BITDAO_LP_WALLET_ADDRESS,
       ];
     }
 
@@ -50,15 +53,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       );
       return res.status(200).json({});
     }
+
     alchemySettings.apiKey = String(req.query.alchemyApi);
+
     let totalBalances: Array<TokenBalance> = [];
     const alchemy = new Alchemy(alchemySettings);
     for (const address of addresses) {
       // TODO: parallelize this: check all `await` cases
       const balances = await alchemy.core.getTokenBalances(address);
-      // console.log(balances);
       totalBalances = [...totalBalances, ...balances.tokenBalances];
-      console.log(balances);
     }
 
     const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
