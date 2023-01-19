@@ -7,7 +7,9 @@ import {
   BITDAO_TREASURY_ADDRESS,
   BITDAO_LP_WALLET_ADDRESS
 } from "config/general";
-import { ethers } from "ethers";
+
+import { BigNumber } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 
 const CACHE_TIME = 1800;
 const alchemySettings = {
@@ -52,8 +54,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const normaliseBalances = (balance: TokenBalance) => {
       // format to ordinary value (ef xBIT)
-      balance.tokenBalance = ethers.utils.formatUnits(
-        ethers.BigNumber.from(balance.tokenBalance),
+      balance.tokenBalance = formatUnits(
+        BigNumber.from(balance.tokenBalance),
         18
       ).toString()
 
