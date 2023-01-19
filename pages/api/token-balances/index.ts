@@ -68,7 +68,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
       }
 
-      return parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData);
+      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData)}`;
     };
 
     const getBalances = async (address: string) => {
