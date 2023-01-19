@@ -77,18 +77,25 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return balances;
     };
 
-    const balances = await Promise.all([
-      await getTotalSupply(),
-      await getBalances(BITDAO_TREASURY_ADDRESS),
-      await getBalances(BITDAO_LP_WALLET_ADDRESS),
-      await getBalances(BIT_BURN_ADDRESS)
+    // get all async calls in parallel
+    const [
+      bitTotalSupply, 
+      bitBalancesData, 
+      bitLPTokenBalancesData, 
+      bitBurnedBalancesData
+    ] = await Promise.all([
+      getTotalSupply(),
+      getBalances(BITDAO_TREASURY_ADDRESS),
+      getBalances(BITDAO_LP_WALLET_ADDRESS),
+      getBalances(BIT_BURN_ADDRESS)
     ]);
 
+    // construct results
     const results = {
-      bitTotalSupply: balances[0],
-      bitBalancesData: balances[1],
-      bitLPTokenBalancesData: balances[2],
-      bitBurnedBalancesData: balances[3],
+      bitTotalSupply,
+      bitBalancesData,
+      bitLPTokenBalancesData,
+      bitBurnedBalancesData,
     };
 
     res.setHeader(
