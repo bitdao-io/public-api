@@ -1,4 +1,4 @@
-import { Alchemy, Network } from "alchemy-sdk";
+import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
@@ -7,6 +7,7 @@ import {
   BITDAO_TREASURY_ADDRESS,
   BITDAO_LP_WALLET_ADDRESS
 } from "config/general";
+import { ethers } from "ethers";
 
 const CACHE_TIME = 1800;
 const alchemySettings = {
@@ -49,11 +50,26 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return balances;
     };
 
+    const normaliseBalances = (balance: TokenBalance) => {
+      // format to ordinary value (ef xBIT)
+      balance.tokenBalance = ethers.utils.formatUnits(
+        ethers.BigNumber.from(balance.tokenBalance),
+        18
+      ).toString()
+
+      return balance;
+    }
+
     const results = {
       bitBalancesData: await getBalances(BITDAO_TREASURY_ADDRESS),
       bitLPTokenBalancesData: await getBalances(BITDAO_LP_WALLET_ADDRESS),
       bitBurnedBalancesData: await getBalances(BIT_BURN_ADDRESS),
     };
+
+    // normalise each of the discovered balances
+    results.bitBalancesData.tokenBalances = results.bitBalancesData.tokenBalances.map(normaliseBalances)
+    results.bitLPTokenBalancesData.tokenBalances = results.bitLPTokenBalancesData.tokenBalances.map(normaliseBalances)
+    results.bitBurnedBalancesData.tokenBalances = results.bitBurnedBalancesData.tokenBalances.map(normaliseBalances)
 
     res.setHeader(
       "Cache-Control",
