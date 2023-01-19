@@ -15,7 +15,7 @@ export const getDay = (timestamp: number) => {
 export const abbrvNumber = (num: number) => {
   // Alter numbers larger than 1k
   if (num >= 1e3) {
-    const units = ["k", "M", "B", "T"];
+    const units = ["k+", "M+", "B+", "T+"];
     const order = Math.floor(Math.log(num) / Math.log(1000));
     const unitname = units[(order - 1)];
     
