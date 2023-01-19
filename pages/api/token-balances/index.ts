@@ -1,4 +1,4 @@
-import { Alchemy, Network } from "alchemy-sdk";
+import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
@@ -7,6 +7,9 @@ import {
   BITDAO_TREASURY_ADDRESS,
   BITDAO_LP_WALLET_ADDRESS
 } from "config/general";
+
+import { BigNumber, Contract } from "ethers";
+import { formatUnits } from "ethers/lib/utils";
 
 const CACHE_TIME = 1800;
 const alchemySettings = {
@@ -42,17 +45,57 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const alchemy = new Alchemy(alchemySettings);
 
+    const getTotalSupply = async () => {
+      // Example reading from a contract directly...
+      const provider = await alchemy.config.getProvider();
+
+      const abi = [
+        "function totalSupply() view returns (uint256)",
+      ];
+      
+      const erc20 = new Contract(BIT_CONTRACT_ADDRESS, abi, provider);
+
+      return formatUnits(await erc20.totalSupply(), 18).toString();
+    };
+
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
         BIT_CONTRACT_ADDRESS,
       ]);
+
+      // normalise each of the discovered balances
+      balances.tokenBalances = balances.tokenBalances.map((balance: TokenBalance) => {
+        // format to ordinary value (to BIT)
+        balance.tokenBalance = formatUnits(
+          BigNumber.from(balance.tokenBalance),
+          18
+        ).toString()
+  
+        return balance;
+      });
+
       return balances;
     };
 
+    // get all async calls in parallel
+    const [
+      bitTotalSupply, 
+      bitBalancesData, 
+      bitLPTokenBalancesData, 
+      bitBurnedBalancesData
+    ] = await Promise.all([
+      getTotalSupply(),
+      getBalances(BITDAO_TREASURY_ADDRESS),
+      getBalances(BITDAO_LP_WALLET_ADDRESS),
+      getBalances(BIT_BURN_ADDRESS)
+    ]);
+
+    // construct results
     const results = {
-      bitBalancesData: await getBalances(BITDAO_TREASURY_ADDRESS),
-      bitLPTokenBalancesData: await getBalances(BITDAO_LP_WALLET_ADDRESS),
-      bitBurnedBalancesData: await getBalances(BIT_BURN_ADDRESS),
+      bitTotalSupply,
+      bitBalancesData,
+      bitLPTokenBalancesData,
+      bitBurnedBalancesData,
     };
 
     res.setHeader(
