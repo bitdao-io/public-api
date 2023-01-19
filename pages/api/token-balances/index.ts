@@ -1,4 +1,4 @@
-import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
+import { Alchemy, Network, TokenBalance, TokenBalancesResponse } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
@@ -58,6 +58,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return formatUnits(await erc20.totalSupply(), 18).toString();
     };
 
+    const getCirculatingSupply = (
+      totalSupply: string,
+      bitBalancesData: TokenBalancesResponse, 
+      bitLPTokenBalancesData: TokenBalancesResponse, 
+      bitBurnedBalancesData: TokenBalancesResponse
+    ) => {
+      const getBalance = (balance: TokenBalancesResponse) => {
+        return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
+      }
+
+      return parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData);
+    };
+
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
         BIT_CONTRACT_ADDRESS,
@@ -96,6 +109,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData,
       bitLPTokenBalancesData,
       bitBurnedBalancesData,
+      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData),
     };
 
     res.setHeader(
