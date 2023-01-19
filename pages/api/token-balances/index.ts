@@ -64,19 +64,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ]);
 
       // normalise each of the discovered balances
-      balances.tokenBalances = balances.tokenBalances.map(normaliseBalances);
+      balances.tokenBalances = balances.tokenBalances.map((balance: TokenBalance) => {
+        // format to ordinary value (to BIT)
+        balance.tokenBalance = formatUnits(
+          BigNumber.from(balance.tokenBalance),
+          18
+        ).toString()
+  
+        return balance;
+      });
 
       return balances;
-    };
-
-    const normaliseBalances = (balance: TokenBalance) => {
-      // format to ordinary value (to BIT)
-      balance.tokenBalance = formatUnits(
-        BigNumber.from(balance.tokenBalance),
-        18
-      ).toString()
-
-      return balance;
     };
 
     const balances = await Promise.all([
@@ -84,7 +82,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       await getBalances(BITDAO_TREASURY_ADDRESS),
       await getBalances(BITDAO_LP_WALLET_ADDRESS),
       await getBalances(BIT_BURN_ADDRESS)
-    ])
+    ]);
 
     const results = {
       bitTotalSupply: balances[0],
