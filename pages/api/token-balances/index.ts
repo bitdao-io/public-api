@@ -8,7 +8,7 @@ import {
   BITDAO_LP_WALLET_ADDRESS
 } from "config/general";
 
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 
 const CACHE_TIME = 1800;
@@ -45,10 +45,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const alchemy = new Alchemy(alchemySettings);
 
+    const getTotalSupply = async () => {
+      // Example reading from a contract directly...
+      const provider = await alchemy.config.getProvider();
+
+      const abi = [
+        "function totalSupply() view returns (uint256)",
+      ];
+      
+      const erc20 = new Contract(BIT_CONTRACT_ADDRESS, abi, provider);
+
+      return formatUnits(await erc20.totalSupply(), 18).toString();
+    };
+
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
         BIT_CONTRACT_ADDRESS,
       ]);
+
+      // normalise each of the discovered balances
+      balances.tokenBalances = balances.tokenBalances.map(normaliseBalances);
+
       return balances;
     };
 
@@ -62,16 +79,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return balance;
     };
 
-    const results = {
-      bitBalancesData: await getBalances(BITDAO_TREASURY_ADDRESS),
-      bitLPTokenBalancesData: await getBalances(BITDAO_LP_WALLET_ADDRESS),
-      bitBurnedBalancesData: await getBalances(BIT_BURN_ADDRESS),
-    };
+    const balances = await Promise.all([
+      await getTotalSupply(),
+      await getBalances(BITDAO_TREASURY_ADDRESS),
+      await getBalances(BITDAO_LP_WALLET_ADDRESS),
+      await getBalances(BIT_BURN_ADDRESS)
+    ])
 
-    // normalise each of the discovered balances
-    results.bitBalancesData.tokenBalances = results.bitBalancesData.tokenBalances.map(normaliseBalances);
-    results.bitLPTokenBalancesData.tokenBalances = results.bitLPTokenBalancesData.tokenBalances.map(normaliseBalances);
-    results.bitBurnedBalancesData.tokenBalances = results.bitBurnedBalancesData.tokenBalances.map(normaliseBalances);
+    const results = {
+      bitTotalSupply: balances[0],
+      bitBalancesData: balances[1],
+      bitLPTokenBalancesData: balances[2],
+      bitBurnedBalancesData: balances[3],
+    };
 
     res.setHeader(
       "Cache-Control",
