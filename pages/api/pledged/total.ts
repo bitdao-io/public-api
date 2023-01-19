@@ -2,11 +2,11 @@ import {
     NextApiRequest,
     NextApiResponse
   } from "next";
-  import { getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
+  import { abbrvNumber, getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
   
   // - Constants
   const CACHE_TIME = 1800;
-  
+
   // Main handler to construct response
   const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
@@ -53,7 +53,7 @@ import {
       res.json({
         success: true,
         statusCode: 200,
-        result: result,
+        result: abbrvNumber(result),
       });
   
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

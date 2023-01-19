@@ -2,7 +2,7 @@ import {
   NextApiRequest,
   NextApiResponse
 } from "next";
-import { getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
+import { abbrvNumber, getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
 
 // - Constants
 const CACHE_TIME = 1800;
@@ -28,11 +28,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // first result in the raw csv file is always incomplete...
     data.body.list.shift();
 
+
     // get the total amount contributed to date...
+    const total = data.body.list.reduce((total, row) => {
+      return total + row.contributeVolume;
+    }, 0);
+
+    // construct result - return everything
     const result = {
-      total: data.body.list.reduce((total, row) => {
-        return total + row.contributeVolume;
-      }, 0),
+      total: abbrvNumber(total),
+      totalFull: total,
       history: data.body.list
     };
 
