@@ -53,14 +53,14 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     };
 
     const normaliseBalances = (balance: TokenBalance) => {
-      // format to ordinary value (ef xBIT)
+      // format to ordinary value (to BIT)
       balance.tokenBalance = formatUnits(
         BigNumber.from(balance.tokenBalance),
         18
       ).toString()
 
       return balance;
-    }
+    };
 
     const results = {
       bitBalancesData: await getBalances(BITDAO_TREASURY_ADDRESS),
@@ -69,9 +69,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     };
 
     // normalise each of the discovered balances
-    results.bitBalancesData.tokenBalances = results.bitBalancesData.tokenBalances.map(normaliseBalances)
-    results.bitLPTokenBalancesData.tokenBalances = results.bitLPTokenBalancesData.tokenBalances.map(normaliseBalances)
-    results.bitBurnedBalancesData.tokenBalances = results.bitBurnedBalancesData.tokenBalances.map(normaliseBalances)
+    results.bitBalancesData.tokenBalances = results.bitBalancesData.tokenBalances.map(normaliseBalances);
+    results.bitLPTokenBalancesData.tokenBalances = results.bitLPTokenBalancesData.tokenBalances.map(normaliseBalances);
+    results.bitBurnedBalancesData.tokenBalances = results.bitBurnedBalancesData.tokenBalances.map(normaliseBalances);
 
     res.setHeader(
       "Cache-Control",
