@@ -144,7 +144,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     });
 
     const portfolio = [...erc20Tokens, ethToken].map((token) => {
-      token.perOfHoldings = Math.floor(((100 / totalValueInUSD) * token.value) * 100) / 100 + '%';
+      token.perOfHoldings = Math.round(((100 / totalValueInUSD) * token.value) * 100) / 100 + '%';
 
       return token;
     });
