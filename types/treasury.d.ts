@@ -7,6 +7,7 @@ interface TreasuryToken {
   price: number
   symbol: string
   value: number
+  perOfHoldings: string
 }
 
 export type { TreasuryToken }

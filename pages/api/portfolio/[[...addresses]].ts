@@ -95,6 +95,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       symbol: "ETH",
       decimals: ETH_DECIMALS,
       value: ethBalanceInNumber * ethereum.usd,
+      perOfHoldings: '%',
     };
 
     const tokensAddresses = nonZeroTokenBalances.map(
@@ -117,7 +118,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       )
     )
 
-    let totalValueInUSD = 0;
+    let totalValueInUSD = ethToken.value;
     const erc20Tokens: Array<TreasuryToken> = []
     withPriceNonZeroBalances.forEach((item, index) => {
       const balanceInString = item.tokenBalance;
@@ -135,14 +136,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         logo: metadataSet[index].logo ?? "",
         price: tokenUSDPrices[item.contractAddress].usd,
         value: balanceInNumber * tokenUSDPrices[item.contractAddress].usd,
+        perOfHoldings: '%'
       };
 
       erc20Tokens.push(erc20Token)
       totalValueInUSD += erc20Token.value
-    })
+    });
 
-    totalValueInUSD += ethToken.value;
-    const portfolio = [...erc20Tokens, ethToken];
+    const portfolio = [...erc20Tokens, ethToken].map((token) => {
+      token.perOfHoldings = Math.floor(((100 / totalValueInUSD) * token.value) * 100) / 100 + '%';
+
+      return token;
+    });
 
     res.setHeader(
       "Cache-Control",
