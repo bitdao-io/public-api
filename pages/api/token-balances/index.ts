@@ -1,11 +1,16 @@
-import { Alchemy, Network, TokenBalance, TokenBalancesResponse } from "alchemy-sdk";
+import {
+  Alchemy,
+  Network,
+  TokenBalance,
+  TokenBalancesResponse,
+} from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
-  BIT_CONTRACT_ADDRESS,
-  BIT_BURN_ADDRESS,
+  BITDAO_LP_WALLET_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
-  BITDAO_LP_WALLET_ADDRESS
+  BIT_BURN_ADDRESS,
+  BIT_CONTRACT_ADDRESS,
 } from "config/general";
 
 import { BigNumber, Contract } from "ethers";
@@ -16,6 +21,15 @@ const alchemySettings = {
   apiKey: "", // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
 };
+/**
+ * @swagger
+ * /api/token-balances:
+ *   get:
+ *     description: Returns the hello world
+ *     responses:
+ *       200:
+ *         description: hello world
+ */
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
@@ -49,10 +63,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // Example reading from a contract directly...
       const provider = await alchemy.config.getProvider();
 
-      const abi = [
-        "function totalSupply() view returns (uint256)",
-      ];
-      
+      const abi = ["function totalSupply() view returns (uint256)"];
+
       const erc20 = new Contract(BIT_CONTRACT_ADDRESS, abi, provider);
 
       return formatUnits(await erc20.totalSupply(), 18).toString();
@@ -60,15 +72,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const getCirculatingSupply = (
       totalSupply: string,
-      bitBalancesData: TokenBalancesResponse, 
-      bitLPTokenBalancesData: TokenBalancesResponse, 
+      bitBalancesData: TokenBalancesResponse,
+      bitLPTokenBalancesData: TokenBalancesResponse,
       bitBurnedBalancesData: TokenBalancesResponse
     ) => {
       const getBalance = (balance: TokenBalancesResponse) => {
-        return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
-      }
+        return parseFloat(balance.tokenBalances[0].tokenBalance || "0");
+      };
 
-      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData)}`;
+      return `${
+        parseFloat(totalSupply) -
+        getBalance(bitBalancesData) -
+        getBalance(bitLPTokenBalancesData) -
+        getBalance(bitBurnedBalancesData)
+      }`;
     };
 
     const getBalances = async (address: string) => {
@@ -77,30 +94,32 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ]);
 
       // normalise each of the discovered balances
-      balances.tokenBalances = balances.tokenBalances.map((balance: TokenBalance) => {
-        // format to ordinary value (to BIT)
-        balance.tokenBalance = formatUnits(
-          BigNumber.from(balance.tokenBalance),
-          18
-        ).toString()
-  
-        return balance;
-      });
+      balances.tokenBalances = balances.tokenBalances.map(
+        (balance: TokenBalance) => {
+          // format to ordinary value (to BIT)
+          balance.tokenBalance = formatUnits(
+            BigNumber.from(balance.tokenBalance),
+            18
+          ).toString();
+
+          return balance;
+        }
+      );
 
       return balances;
     };
 
     // get all async calls in parallel
     const [
-      bitTotalSupply, 
-      bitBalancesData, 
-      bitLPTokenBalancesData, 
-      bitBurnedBalancesData
+      bitTotalSupply,
+      bitBalancesData,
+      bitLPTokenBalancesData,
+      bitBurnedBalancesData,
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
       getBalances(BITDAO_LP_WALLET_ADDRESS),
-      getBalances(BIT_BURN_ADDRESS)
+      getBalances(BIT_BURN_ADDRESS),
     ]);
 
     // construct results
@@ -109,7 +128,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData,
       bitLPTokenBalancesData,
       bitBurnedBalancesData,
-      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData),
+      bitCirculatingSupply: getCirculatingSupply(
+        bitTotalSupply,
+        bitBalancesData,
+        bitLPTokenBalancesData,
+        bitBurnedBalancesData
+      ),
     };
 
     res.setHeader(
