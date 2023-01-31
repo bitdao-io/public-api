@@ -1,16 +1,8 @@
+import { SWAGGER_DESCRIPTION } from "@/config/general";
 import { createSwaggerSpec } from "next-swagger-doc";
 import "server-only";
 
 export const getApiDocs = async () => {
-  const spec: Record<string, any> = createSwaggerSpec({
-    apiFolder: "/pages/api",
-    definition: {
-      openapi: "3.0.0",
-      info: {
-        title: "Next Swagger API Example",
-        version: "1.0",
-      },
-    },
-  });
+  const spec: Record<string, any> = createSwaggerSpec(SWAGGER_DESCRIPTION);
   return spec;
 };

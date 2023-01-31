@@ -4,7 +4,7 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
-  swcMinify: true,
+  // swcMinify: true,
 
   // compiler: {
   //   //   // ssr and displayName are configured by default

@@ -24,11 +24,31 @@ const alchemySettings = {
 /**
  * @swagger
  * /api/token-balances:
- *   get:
- *     description: Returns the hello world
- *     responses:
- *       200:
- *         description: hello world
+ *  get:
+ *    summary: Get token balances
+ *
+ *    description: |-
+ *      **Returns balances**
+ *
+ *    parameters:
+ *    - name: alchemyApi
+ *      in: query
+ *      required: true
+ *
+ *    responses:
+ *
+ *      200:
+ *        description: token balances
+ *        content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TokenBalances'
+ *
+ *      500:
+ *        description: alchemyApi not provided
+ *        success: false
+ *        statusCode: 500
+ *        message: alchemyApi not provided
  */
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {

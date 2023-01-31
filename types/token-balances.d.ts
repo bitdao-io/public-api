@@ -1,15 +1,15 @@
-interface TokenBalances {
+export interface TokenBalances {
   success: boolean;
   statusCode: number;
   results: TokenBalancesResults;
 }
 
-interface TokenBalance {
+export interface TokenBalance {
   contractAddress: string;
   tokenBalance: string;
 }
 
-interface TokenBalancesResults {
+export interface TokenBalancesResults {
   bitTotalSupply: string;
   bitBalancesData: {
     address: string;
@@ -19,7 +19,11 @@ interface TokenBalancesResults {
     address: string;
     tokenBalances: TokenBalance[];
   };
+  bitBurnedBalancesData: {
+    address: string;
+    tokenBalances: TokenBalance[];
+  };
   bitCirculatingSupply: string;
 }
 
-export type { TokenBalances };
+// export { TokenBalances };
