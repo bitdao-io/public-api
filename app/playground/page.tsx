@@ -1,6 +1,6 @@
 "use client";
-import { API } from "@stoplight/elements";
 import "@stoplight/elements/styles.min.css";
+import dynamic from "next/dynamic";
 // import {
 
 // const APIDocumentUI = dynamic<{
@@ -14,6 +14,14 @@ import "@stoplight/elements/styles.min.css";
 //     loading: () => <p>Loading...</p>,
 //   }
 // );
+
+const APIDocumentUI = dynamic(
+  () => import("@stoplight/elements").then(({ API }) => API),
+  {
+    ssr: false,
+    loading: () => <div>Loading...</div>,
+  }
+);
 
 // const theme = {
 //   ...defaultTheme,
@@ -50,7 +58,7 @@ export default function Playground() {
     //   </x.div>
     // </ThemeProvider>
     <div className="App">
-      <API apiDescriptionUrl="/api/doc" router="hash" />
+      <APIDocumentUI apiDescriptionUrl="/api/doc" router="hash" />
     </div>
   );
 }
