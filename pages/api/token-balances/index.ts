@@ -5,7 +5,8 @@ import {
   BIT_CONTRACT_ADDRESS,
   BIT_BURN_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
-  BITDAO_LP_WALLET_ADDRESS
+  BITDAO_LP_WALLET_ADDRESS,
+  BIT_LOCKED_ADDRESSES
 } from "config/general";
 
 import { BigNumber, Contract } from "ethers";
@@ -62,13 +63,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       totalSupply: string,
       bitBalancesData: TokenBalancesResponse, 
       bitLPTokenBalancesData: TokenBalancesResponse, 
-      bitBurnedBalancesData: TokenBalancesResponse
+      bitBurnedBalancesData: TokenBalancesResponse,
+      bitLockedBalanceData: TokenBalancesResponse[]
     ) => {
+      // returns the actual balance held within the TokenBalancesResponse
       const getBalance = (balance: TokenBalancesResponse) => {
         return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
       }
 
-      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData)}`;
+      // sum all balances in the list of locked addresses
+      const bitTotalLocked = bitLockedBalanceData.reduce((total: number, balance: TokenBalancesResponse) => total + getBalance(balance), 0);
+
+      // take any BIT not in the circulating supply away from totalSupply
+      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData) - bitTotalLocked}`;
     };
 
     const getBalances = async (address: string) => {
@@ -95,12 +102,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitTotalSupply, 
       bitBalancesData, 
       bitLPTokenBalancesData, 
-      bitBurnedBalancesData
+      bitBurnedBalancesData,
+      bitLockedBalanceData
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
       getBalances(BITDAO_LP_WALLET_ADDRESS),
-      getBalances(BIT_BURN_ADDRESS)
+      getBalances(BIT_BURN_ADDRESS),
+      // get balance from each of the locked addresses (as a seperate await stack so we can map & reduce these)
+      Promise.all(
+        BIT_LOCKED_ADDRESSES.map(async (address) => getBalances(address))
+      )
     ]);
 
     // construct results
@@ -109,7 +121,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData,
       bitLPTokenBalancesData,
       bitBurnedBalancesData,
-      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData),
+      bitLockedBalanceData,
+      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData, bitLockedBalanceData),
     };
 
     res.setHeader(
