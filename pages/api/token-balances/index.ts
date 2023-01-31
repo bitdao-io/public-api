@@ -2,10 +2,11 @@ import { Alchemy, Network, TokenBalance, TokenBalancesResponse } from "alchemy-s
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
-  BIT_CONTRACT_ADDRESS,
-  BIT_BURN_ADDRESS,
+  BITDAO_CONTRACT_ADDRESS,
+  BITDAO_BURN_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
-  BITDAO_LP_WALLET_ADDRESS
+  BITDAO_LP_WALLET_ADDRESS,
+  BITDAO_LOCKED_ADDRESSES
 } from "config/general";
 
 import { BigNumber, Contract } from "ethers";
@@ -53,7 +54,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         "function totalSupply() view returns (uint256)",
       ];
       
-      const erc20 = new Contract(BIT_CONTRACT_ADDRESS, abi, provider);
+      const erc20 = new Contract(BITDAO_CONTRACT_ADDRESS, abi, provider);
 
       return formatUnits(await erc20.totalSupply(), 18).toString();
     };
@@ -62,18 +63,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       totalSupply: string,
       bitBalancesData: TokenBalancesResponse, 
       bitLPTokenBalancesData: TokenBalancesResponse, 
-      bitBurnedBalancesData: TokenBalancesResponse
+      bitBurnedBalancesData: TokenBalancesResponse,
+      bitLockedBalancesData: TokenBalancesResponse[]
     ) => {
+      // returns the actual balance held within the TokenBalancesResponse
       const getBalance = (balance: TokenBalancesResponse) => {
         return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
       }
 
-      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData)}`;
+      // sum all balances in the list of locked addresses
+      const bitLockedTotal = bitLockedBalancesData.reduce((total: number, balance: TokenBalancesResponse) => total + getBalance(balance), 0);
+
+      // take any BIT not in the circulating supply away from totalSupply
+      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData) - bitLockedTotal}`;
     };
 
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
-        BIT_CONTRACT_ADDRESS,
+        BITDAO_CONTRACT_ADDRESS,
       ]);
 
       // normalise each of the discovered balances
@@ -95,12 +102,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitTotalSupply, 
       bitBalancesData, 
       bitLPTokenBalancesData, 
-      bitBurnedBalancesData
+      bitBurnedBalancesData,
+      // collect up all other addresses into an array (this represents anything passed in BITDAO_LOCKED_ADDRESSES)
+      ...bitLockedBalancesData
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
       getBalances(BITDAO_LP_WALLET_ADDRESS),
-      getBalances(BIT_BURN_ADDRESS)
+      getBalances(BITDAO_BURN_ADDRESS),
+      // get balance from each of the locked addresses
+      ...BITDAO_LOCKED_ADDRESSES.map(async (address) => getBalances(address)) 
     ]);
 
     // construct results
@@ -109,7 +120,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData,
       bitLPTokenBalancesData,
       bitBurnedBalancesData,
-      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData),
+      bitLockedBalancesData,
+      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData, bitLockedBalancesData),
     };
 
     res.setHeader(
