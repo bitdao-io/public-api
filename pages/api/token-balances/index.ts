@@ -76,7 +76,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
     }
     
-    // retrive balance data for BITDAO_CONTRACT_ADDRESS given EOA address
+    // retrieve balance data for BITDAO_CONTRACT_ADDRESS given EOA address
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
         BITDAO_CONTRACT_ADDRESS,
