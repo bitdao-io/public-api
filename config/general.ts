@@ -19,7 +19,6 @@ const SWAGGER_DESCRIPTION = {
         url: "https://windranger.io/",
         "x-twitter": "WindrangerLabs",
       },
-      mytest: "test",
       description: description,
 
       license: {
