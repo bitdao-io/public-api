@@ -2,11 +2,11 @@ import { Alchemy, Network, TokenBalance, TokenBalancesResponse } from "alchemy-s
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
-  BIT_CONTRACT_ADDRESS,
-  BIT_BURN_ADDRESS,
+  BITDAO_CONTRACT_ADDRESS,
+  BITDAO_BURN_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
   BITDAO_LP_WALLET_ADDRESS,
-  BIT_LOCKED_ADDRESSES
+  BITDAO_LOCKED_ADDRESSES
 } from "config/general";
 
 import { BigNumber, Contract } from "ethers";
@@ -54,7 +54,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         "function totalSupply() view returns (uint256)",
       ];
       
-      const erc20 = new Contract(BIT_CONTRACT_ADDRESS, abi, provider);
+      const erc20 = new Contract(BITDAO_CONTRACT_ADDRESS, abi, provider);
 
       return formatUnits(await erc20.totalSupply(), 18).toString();
     };
@@ -80,7 +80,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
-        BIT_CONTRACT_ADDRESS,
+        BITDAO_CONTRACT_ADDRESS,
       ]);
 
       // normalise each of the discovered balances
@@ -108,10 +108,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
       getBalances(BITDAO_LP_WALLET_ADDRESS),
-      getBalances(BIT_BURN_ADDRESS),
+      getBalances(BITDAO_BURN_ADDRESS),
       // get balance from each of the locked addresses (as a seperate await stack so we can map & reduce these)
       Promise.all(
-        BIT_LOCKED_ADDRESSES.map(async (address) => getBalances(address))
+        BITDAO_LOCKED_ADDRESSES.map(async (address) => getBalances(address))
       )
     ]);
 
