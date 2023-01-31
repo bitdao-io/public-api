@@ -103,16 +103,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData, 
       bitLPTokenBalancesData, 
       bitBurnedBalancesData,
-      bitLockedBalancesData
+      // collect up all other addresses into an array (this represents anything passed in BITDAO_LOCKED_ADDRESSES)
+      ...bitLockedBalancesData
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
       getBalances(BITDAO_LP_WALLET_ADDRESS),
       getBalances(BITDAO_BURN_ADDRESS),
-      // get balance from each of the locked addresses (as a seperate await stack so we can map & reduce these)
-      Promise.all(
-        BITDAO_LOCKED_ADDRESSES.map(async (address) => getBalances(address))
-      )
+      // get balance from each of the locked addresses
+      ...BITDAO_LOCKED_ADDRESSES.map(async (address) => getBalances(address)) 
     ]);
 
     // construct results
