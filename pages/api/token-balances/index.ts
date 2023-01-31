@@ -64,7 +64,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData: TokenBalancesResponse, 
       bitLPTokenBalancesData: TokenBalancesResponse, 
       bitBurnedBalancesData: TokenBalancesResponse,
-      bitLockedBalanceData: TokenBalancesResponse[]
+      bitLockedBalancesData: TokenBalancesResponse[]
     ) => {
       // returns the actual balance held within the TokenBalancesResponse
       const getBalance = (balance: TokenBalancesResponse) => {
@@ -72,10 +72,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       }
 
       // sum all balances in the list of locked addresses
-      const bitTotalLocked = bitLockedBalanceData.reduce((total: number, balance: TokenBalancesResponse) => total + getBalance(balance), 0);
+      const bitLockedTotal = bitLockedBalancesData.reduce((total: number, balance: TokenBalancesResponse) => total + getBalance(balance), 0);
 
       // take any BIT not in the circulating supply away from totalSupply
-      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData) - bitTotalLocked}`;
+      return `${parseFloat(totalSupply) - getBalance(bitBalancesData) - getBalance(bitLPTokenBalancesData) - getBalance(bitBurnedBalancesData) - bitLockedTotal}`;
     };
 
     const getBalances = async (address: string) => {
@@ -103,7 +103,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData, 
       bitLPTokenBalancesData, 
       bitBurnedBalancesData,
-      bitLockedBalanceData
+      bitLockedBalancesData
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
@@ -121,8 +121,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBalancesData,
       bitLPTokenBalancesData,
       bitBurnedBalancesData,
-      bitLockedBalanceData,
-      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData, bitLockedBalanceData),
+      bitLockedBalancesData,
+      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalancesData, bitLPTokenBalancesData, bitBurnedBalancesData, bitLockedBalancesData),
     };
 
     res.setHeader(
