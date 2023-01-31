@@ -3,7 +3,7 @@ import "server-only";
 
 export const getApiDocs = async () => {
   const spec: Record<string, any> = createSwaggerSpec({
-    apiFolder: "/src/pages/api",
+    apiFolder: "/pages/api",
     definition: {
       openapi: "3.0.0",
       info: {
