@@ -5,6 +5,8 @@ import { createSwaggerSpec } from "next-swagger-doc";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
+    console.log("process.cwd() 1", process.cwd());
+
     const swaggerHandler = createSwaggerSpec(SWAGGER_DESCRIPTION);
     console.log(swaggerHandler);
     const results = swaggerHandler;
