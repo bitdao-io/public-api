@@ -8,6 +8,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const swaggerHandler = createSwaggerSpec(SWAGGER_DESCRIPTION);
     console.log(swaggerHandler);
     const results = swaggerHandler;
+    console.log("process.cwd()", process.cwd());
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     res.json({
       success: true,
