@@ -2,13 +2,17 @@ import { SWAGGER_DESCRIPTION } from "@/config/general";
 import { GetStaticProps, InferGetStaticPropsType } from "next";
 import { createSwaggerSpec } from "next-swagger-doc";
 import dynamic from "next/dynamic";
+// import SwaggerUI from "swagger-ui-react";
 import "swagger-ui-react/swagger-ui.css";
 
 // const SwaggerUI = dynamic<{
 //   spec: Record<string, any>;
 // }>(import("swagger-ui-react"), { ssr: false });
 
-const SwaggerUI = dynamic(() => import("swagger-ui-react"), {
+// const SwaggerUI = dynamic(() => import("swagger-ui-react"), {
+//   ssr: false,
+// });
+const SwaggerUI = dynamic(import("swagger-ui-react"), {
   ssr: false,
 });
 

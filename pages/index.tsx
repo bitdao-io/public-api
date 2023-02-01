@@ -1,5 +1,8 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
-
+const SwaggerUI = dynamic(import("swagger-ui-react"), {
+  ssr: false,
+});
 export default function Home() {
   return (
     <>
@@ -8,6 +11,7 @@ export default function Home() {
         <Link href="playground">Playground</Link>
         <Link href="api-doc">Swagger</Link>
       </div>
+      <SwaggerUI url="/api/doc" />
     </>
   );
 }
