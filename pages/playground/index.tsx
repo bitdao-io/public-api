@@ -1,4 +1,3 @@
-"use client";
 import "@stoplight/elements/styles.min.css";
 import dynamic from "next/dynamic";
 // import {
