@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postbuild": "cpy 'types/**/*.swagger.yaml' public/openapi --flat",
+    "prebuild": "cpy 'types/**/*.swagger.yaml' public/openapi --flat",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
