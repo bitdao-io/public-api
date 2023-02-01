@@ -43,6 +43,7 @@ const SWAGGER_DESCRIPTION = {
     ],
   },
   apiFolder: "pages/api",
+  schemaFolders: ["openapi"],
 };
 
 export {
