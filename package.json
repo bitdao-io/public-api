@@ -4,11 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "cpy 'types/**/*.swagger.*' public/openapi --flat",
+    "prebuild": "yarn openapi:yaml && yarn swagger",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "openapi:yaml": "typeconv -f ts -t oapi --oapi-format yaml --output-extension 'swagger.yaml' --output-directory 'types/openapi' 'types/*.ts'"
+    "openapi:yaml": "typeconv -f ts -t oapi --oapi-format yaml --output-extension 'swagger.yaml' --output-directory 'types/openapi' 'types/*.ts'",
+    "swagger": "yarn generate && next-swagger-doc-cli next-swagger-doc.json",
+    "generate": "npx tsx ./scripts/swaggerconfig.js"
   },
   "dependencies": {
     "@stoplight/elements": "^7.7.10",
@@ -21,7 +23,7 @@
     "eslint-config-next": "13.1.2",
     "ethers": "^5.7.2",
     "next": "13.1.2",
-    "next-swagger-doc": "git+https://github.com/octavioamu/next-swagger-doc.git#v0.3.10",
+    "next-swagger-doc": "^0.3.6",
     "postcss": "^8.4.21",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -36,6 +38,7 @@
     "cpy-cli": "^4.2.0",
     "eslint-config-prettier": "^8.6.0",
     "prettier": "^2.8.3",
+    "ts-node": "^10.9.1",
     "typeconv": "^1.8.0"
   }
 }

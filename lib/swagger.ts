@@ -84,7 +84,7 @@ export function withSwagger({
 }: SwaggerOptions = defaultOptions) {
   // console.log(process.cwd());
 
-  return () => (_req: NextApiRequest, res: NextApiResponse) => {
+  return () => async (_req: NextApiRequest, res: NextApiResponse) => {
     try {
       const swaggerSpec = createSwaggerSpec({
         apiFolder,
