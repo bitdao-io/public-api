@@ -1,7 +1,8 @@
 import { SWAGGER_DESCRIPTION } from "@/config/general";
 import { NextApiRequest, NextApiResponse } from "next";
 
-import { createSwaggerSpec } from "next-swagger-doc";
+// import { createSwaggerSpec } from "next-swagger-doc";
+import { createSwaggerSpec } from "lib/index";
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
