@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: Converted from portfolio.swagger.yaml with typeconv
+  version: '1'
+  x-id: portfolio.swagger.yaml
+  x-comment: >-
+    Generated from types/portfolio.d.ts by core-types-json-schema
+    (https://github.com/grantila/core-types-json-schema) on behalf of typeconv
+    (https://github.com/grantila/typeconv)
+paths: {}
+components:
+  schemas:
+    Portfolio:
+      properties:
+        success:
+          title: Portfolio.success
+          type: boolean
+        statusCode:
+          title: Portfolio.statusCode
+          type: number
+        value:
+          $ref: '#/components/schemas/PortfolioResults'
+          title: Portfolio.value
+      required:
+        - success
+        - statusCode
+        - value
+      additionalProperties: false
+      title: Portfolio
+      type: object
+    PortfolioResults:
+      properties:
+        totalValueInUSD:
+          title: PortfolioResults.totalValueInUSD
+          type: number
+        portfolio:
+          items:
+            $ref: '#/components/schemas/PortfolioData'
+            title: PortfolioResults.portfolio.[]
+          title: PortfolioResults.portfolio
+          type: array
+      required:
+        - totalValueInUSD
+        - portfolio
+      additionalProperties: false
+      title: PortfolioResults
+      type: object
+    PortfolioData:
+      properties:
+        address:
+          title: PortfolioData.address
+          type: string
+        amount:
+          title: PortfolioData.amount
+          type: number
+        logo:
+          title: PortfolioData.logo
+          type: string
+        name:
+          title: PortfolioData.name
+          type: string
+        price:
+          title: PortfolioData.price
+          type: number
+        symbol:
+          title: PortfolioData.symbol
+          type: string
+        decimals:
+          title: PortfolioData.decimals
+          type: number
+        value:
+          title: PortfolioData.value
+          type: number
+        perOfHoldings:
+          title: PortfolioData.perOfHoldings
+          type: string
+      required:
+        - address
+        - amount
+        - logo
+        - name
+        - price
+        - symbol
+        - decimals
+        - value
+        - perOfHoldings
+      additionalProperties: false
+      title: PortfolioData
+      type: object

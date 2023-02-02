@@ -1,4 +1,9 @@
-import { Alchemy, Network, TokenBalance, TokenBalancesResponse } from "alchemy-sdk";
+import {
+  Alchemy,
+  Network,
+  TokenBalance,
+  TokenBalancesResponse,
+} from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
@@ -12,6 +17,36 @@ import {
 import { BigNumber, Contract } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 
+/**
+ * @swagger
+ * /api/token-balances:
+ *  get:
+ *    tags: [Balance]
+ *    summary: Get BIT balances
+ *
+ *    description: |-
+ *      **Returns BIT supply balances**
+ *
+ *    parameters:
+ *    - name: alchemyApi
+ *      in: query
+ *      required: true
+ *
+ *    responses:
+ *
+ *      200:
+ *        description: token balances
+ *        content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TokenBalances'
+ *
+ *      500:
+ *        description: alchemyApi not provided
+ *        success: false
+ *        statusCode: 500
+ *        message: alchemyApi not provided
+ */
 const CACHE_TIME = 1800;
 const alchemySettings = {
   apiKey: "", // Replace with your Alchemy API Key.
@@ -83,15 +118,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ]);
 
       // normalise each of the discovered balances
-      balances.tokenBalances = balances.tokenBalances.map((balance: TokenBalance) => {
-        // format to ordinary value (to BIT)
-        balance.tokenBalance = formatUnits(
-          BigNumber.from(balance.tokenBalance),
-          18
-        ).toString()
-  
-        return balance;
-      });
+      balances.tokenBalances = balances.tokenBalances.map(
+        (balance: TokenBalance) => {
+          // format to ordinary value (to BIT)
+          balance.tokenBalance = formatUnits(
+            BigNumber.from(balance.tokenBalance),
+            18
+          ).toString();
+
+          return balance;
+        }
+      );
 
       return balances;
     };
@@ -104,6 +141,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBurnedBalancesData,
       // collect up all other addresses into an array (this represents anything passed in BITDAO_LOCKED_ADDRESSES)
       ...bitLockedBalancesData
+
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),

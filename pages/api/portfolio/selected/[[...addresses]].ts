@@ -4,11 +4,50 @@ import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
+  BITDAO_LP_WALLET_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
-  BITDAO_LP_WALLET_ADDRESS
-} from 'config/general';
+} from "config/general";
 import { TreasuryToken } from "types/treasury.d";
 
+/**
+ * @swagger
+ * /api/portfolio/selected:
+ *  get:
+ *    tags: [Balance]
+ *    summary: Get treasury selected balances
+ *
+ *    description: |-
+ *      **Returns balances only from selected tokens**
+ *      - 'BitDAO'
+ *      - 'USD Coin',
+ *      - 'Tether',
+ *      - 'Univ3 LP BIT',
+ *      - 'FTX Token',
+ *      - 'xSUSHI',
+ *      - 'WETH',
+ *      - 'ApeX Protocol',
+ *      - 'PleasrDAO'
+ *
+ *    parameters:
+ *    - name: alchemyApi
+ *      in: query
+ *      required: true
+ *
+ *    responses:
+ *
+ *      200:
+ *        description: treasury balances
+ *        content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Portfolio'
+ *
+ *      500:
+ *        description: alchemyApi not provided
+ *        success: false
+ *        statusCode: 500
+ *        message: alchemyApi not provided
+ */
 const CACHE_TIME = 1800;
 const COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/";
 const alchemySettings = {
@@ -19,15 +58,15 @@ const ETH_DECIMALS = 18;
 
 // @TODO - use token address here instead of token name
 const SELECTION = [
-  'BitDAO',
-  'USD Coin',
-  'Tether',
-  'Univ3 LP BIT',
-  'FTX Token',
-  'xSUSHI',
-  'WETH',
-  'ApeX Protocol',
-  'PleasrDAO'
+  "BitDAO",
+  "USD Coin",
+  "Tether",
+  "Univ3 LP BIT",
+  "FTX Token",
+  "xSUSHI",
+  "WETH",
+  "ApeX Protocol",
+  "PleasrDAO",
 ];
 
 // RE:
@@ -48,10 +87,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.query.addresses) {
       addresses = (req.query.addresses[0] as string).split(",");
     } else {
-      addresses = [
-        BITDAO_TREASURY_ADDRESS,
-        BITDAO_LP_WALLET_ADDRESS,
-      ];
+      addresses = [BITDAO_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
     }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -70,29 +106,27 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     alchemySettings.apiKey = String(req.query.alchemyApi);
 
     const alchemy = new Alchemy(alchemySettings);
-    
+
     const [balancesSet, ethBalanceInBigNumber, { ethereum }] =
       await Promise.all([
         Promise.all(
           addresses.map(async (item) => {
-            return await alchemy.core.getTokenBalances(
-              item
-            )
+            return await alchemy.core.getTokenBalances(item);
           })
         ),
         alchemy.core.getBalance(addresses[0]),
         fetch(
           `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
         ).then(async (response) => await response.json()),
-      ])
+      ]);
 
-    let totalBalances: Array<TokenBalance> = []
+    let totalBalances: Array<TokenBalance> = [];
     for (const item of balancesSet) {
-      totalBalances = [...totalBalances, ...item.tokenBalances]
+      totalBalances = [...totalBalances, ...item.tokenBalances];
     }
     const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
       return token.tokenBalance !== HashZero;
-    })
+    });
 
     // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
     const ethBalanceInNumber = Number(
@@ -108,38 +142,43 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       symbol: "ETH",
       decimals: ETH_DECIMALS,
       value: ethBalanceInNumber * ethereum.usd,
-      perOfHoldings: '%',
+      perOfHoldings: "%",
     };
 
     const tokensAddresses = nonZeroTokenBalances.map(
       (token: TokenBalance) => token.contractAddress
-    )
+    );
     const tokenUSDPricesResponse = await fetch(
       `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD`
-    )
+    );
     const tokenUSDPrices = await tokenUSDPricesResponse.json(); // TODO: type it
 
     const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
       (token: TokenBalance) => {
         return tokenUSDPrices[token.contractAddress]?.usd;
       }
-    )
+    );
 
     const metadataSet = await Promise.all(
       withPriceNonZeroBalances.map((item) =>
         alchemy.core.getTokenMetadata(item.contractAddress)
       )
-    )
+    );
 
     let totalValueInUSD = ethToken.value;
-    const erc20Tokens: Array<TreasuryToken> = []
+    const erc20Tokens: Array<TreasuryToken> = [];
     withPriceNonZeroBalances.forEach((item, index) => {
       // limit to only the tokens listed in the SELECTION
-      if (metadataSet[index]?.name && SELECTION.includes(metadataSet[index].name as string)) {
+      if (
+        metadataSet[index]?.name &&
+        SELECTION.includes(metadataSet[index].name as string)
+      ) {
         const balanceInString = item.tokenBalance;
 
         const balanceInNumber = balanceInString
-          ? Number(formatUnits(balanceInString, metadataSet[index].decimals || 18))
+          ? Number(
+              formatUnits(balanceInString, metadataSet[index].decimals || 18)
+            )
           : 0;
 
         const erc20Token: TreasuryToken = {
@@ -151,16 +190,17 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           logo: metadataSet[index].logo ?? "",
           price: tokenUSDPrices[item.contractAddress].usd,
           value: balanceInNumber * tokenUSDPrices[item.contractAddress].usd,
-          perOfHoldings: '%'
+          perOfHoldings: "%",
         };
 
-        erc20Tokens.push(erc20Token)
-        totalValueInUSD += erc20Token.value
+        erc20Tokens.push(erc20Token);
+        totalValueInUSD += erc20Token.value;
       }
     });
 
     const portfolio = [...erc20Tokens, ethToken].map((token) => {
-      token.perOfHoldings = Math.round(((100 / totalValueInUSD) * token.value) * 100) / 100 + '%';
+      token.perOfHoldings =
+        Math.round((100 / totalValueInUSD) * token.value * 100) / 100 + "%";
 
       return token;
     });
