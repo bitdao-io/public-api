@@ -54,7 +54,7 @@ export function createSwaggerSpec({
       ...["swagger.yaml", "json"].map(
         (fileType) => `${publicDirectory}/**/**/*.${fileType}`
       ),
-      // ...["swagger.yaml", "json"].map((fileType) => `**/**/*.${fileType}`),
+      ...["swagger.yaml", "json"].map((fileType) => `**/**/*.${fileType}`),
     ];
   });
   console.log("apiss", apis);
