@@ -1,8 +1,35 @@
 import {
-  NextApiRequest,
-  NextApiResponse
-} from "next";
-import { abbrvNumber, getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
+  abbrvNumber,
+  getAnalyticsDataRecursivelyFrom,
+} from "@/services/analytics";
+import { NextApiRequest, NextApiResponse } from "next";
+
+/**
+ * @swagger
+ * /api/pledged:
+ *  get:
+ *    tags: [Pledged]
+ *    summary: Get history with totals
+ *
+ *    description: |-
+ *      **Returns pledged history by day with totals**
+ *
+ *
+ *    responses:
+ *
+ *      200:
+ *        description: treasury balances
+ *        content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pledged'
+ *
+ *      500:
+ *        description: alchemyApi not provided
+ *        success: false
+ *        statusCode: 500
+ *        message: alchemyApi not provided
+ */
 
 // - Constants
 const CACHE_TIME = 1800;
@@ -15,7 +42,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // fetch all data (from cache if available)
     const data = await getAnalyticsDataRecursivelyFrom(timestamp);
-    
+
     // no data then 500
     if (!data) {
       return res.json({
@@ -28,7 +55,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // first result in the raw csv file is always incomplete...
     data.body.list.shift();
 
-
     // get the total amount contributed to date...
     const total = data.body.list.reduce((total, row) => {
       return total + row.contributeVolume;
@@ -38,7 +64,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const result = {
       total: abbrvNumber(total),
       totalFull: total,
-      history: data.body.list
+      history: data.body.list,
     };
 
     // set up response...
@@ -66,13 +92,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        statusCode: 500,
-        message: error?.message
-      });
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: error?.message,
+    });
   }
 };
 

@@ -1,10 +1,32 @@
-import {
-  NextApiRequest,
-  NextApiResponse
-} from "next";
-import {
-  getAnalyticsDataRecursivelyFrom
-} from "@/services/analytics";
+import { getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
+import { NextApiRequest, NextApiResponse } from "next";
+
+/**
+ * @swagger
+ * /api/pledged/history:
+ *  get:
+ *    tags: [Pledged]
+ *    summary: Get history
+ *
+ *    description: |-
+ *      **Returns pledged history by day**
+ *
+ *
+ *    responses:
+ *
+ *      200:
+ *        description: treasury balances
+ *        content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PledgedHistory'
+ *
+ *      500:
+ *        description: alchemyApi not provided
+ *        success: false
+ *        statusCode: 500
+ *        message: alchemyApi not provided
+ */
 
 // - Constants
 const CACHE_TIME = 1800;
@@ -55,13 +77,11 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        statusCode: 500,
-        message: error?.message
-      });
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: error?.message,
+    });
   }
 };
 

@@ -6,7 +6,11 @@ const BASE_API = process.env.NEXT_PUBLIC_VERCEL_URL
   ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
   : "http://localhost:3000";
 
-const description = `*API* Description [swagger docs](${BASE_API}/api-doc)`;
+const description = `
+Public API docs
+- [Api Playground](${BASE_API}/playground)
+- [Api Swagger](${BASE_API}/)
+`;
 const SWAGGER_DESCRIPTION = {
   definition: {
     openapi: "3.0.0",

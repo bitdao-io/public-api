@@ -56,7 +56,7 @@ export default function Playground() {
     //     />
     //   </x.div>
     // </ThemeProvider>
-    <div className="App">
+    <div className="App h-screen">
       <APIDocumentUI apiDescriptionUrl="/swagger.json" router="hash" />
     </div>
   );

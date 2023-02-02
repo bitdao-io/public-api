@@ -16,19 +16,15 @@ import {
 import { BigNumber, Contract } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 
-const CACHE_TIME = 1800;
-const alchemySettings = {
-  apiKey: "", // Replace with your Alchemy API Key.
-  network: Network.ETH_MAINNET, // Replace with your network.
-};
 /**
  * @swagger
  * /api/token-balances:
  *  get:
- *    summary: Get token balances
+ *    tags: [Balance]
+ *    summary: Get BIT balances
  *
  *    description: |-
- *      **Returns balances**
+ *      **Returns BIT supply balances**
  *
  *    parameters:
  *    - name: alchemyApi
@@ -50,6 +46,11 @@ const alchemySettings = {
  *        statusCode: 500
  *        message: alchemyApi not provided
  */
+const CACHE_TIME = 1800;
+const alchemySettings = {
+  apiKey: "", // Replace with your Alchemy API Key.
+  network: Network.ETH_MAINNET, // Replace with your network.
+};
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {

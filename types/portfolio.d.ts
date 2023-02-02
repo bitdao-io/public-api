@@ -1,15 +1,15 @@
-interface Portfolio {
+export interface Portfolio {
   success: boolean;
   statusCode: number;
   value: PortfolioResults;
 }
 
-interface PortfolioResults {
+export interface PortfolioResults {
   totalValueInUSD: number;
   portfolio: PortfolioData[];
 }
 
-interface PortfolioData {
+export interface PortfolioData {
   address: string;
   amount: number;
   logo: string;
@@ -21,4 +21,4 @@ interface PortfolioData {
   perOfHoldings: string;
 }
 
-export type { Portfolio };
+// export type { Portfolio };

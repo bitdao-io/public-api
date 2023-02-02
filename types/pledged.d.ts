@@ -1,28 +1,28 @@
-interface Pledged {
+export interface Pledged {
   success: boolean;
   statusCode: number;
   result: PledgedResults;
 }
 
-interface PledgedResults {
+export interface PledgedResults {
   total: string;
   totalFull: number;
   history: HistoryData[];
 }
 
-interface PledgedHistory {
+export interface PledgedHistory {
   success: boolean;
   statusCode: number;
   results: HistoryData[];
 }
 
-interface PledgedTotal {
+export interface PledgedTotal {
   success: boolean;
   statusCode: number;
   result: string;
 }
 
-interface HistoryData {
+export interface HistoryData {
   date: string;
   ethPrice: number;
   bitPrice: number;
@@ -38,4 +38,4 @@ interface HistoryData {
   bitCount: number;
 }
 
-export type { Pledged, PledgedTotal, PledgedHistory };
+// export type { Pledged, PledgedTotal, PledgedHistory };

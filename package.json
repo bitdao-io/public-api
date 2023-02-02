@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "yarn openapi:yaml && yarn swagger",
     "dev": "next dev",
     "prebuild": "yarn openapi:yaml && yarn swagger",
     "build": "next build",
