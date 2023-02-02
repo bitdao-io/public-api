@@ -37,9 +37,9 @@ export function createSwaggerSpec({
   const scanFolders = [apiFolder, ...schemaFolders];
   const apis = scanFolders.flatMap((folder) => {
     // console.log(process.cwd());
-    const buildApiDirectory = join(".output/server", folder);
+    const buildApiDirectory = join("./.output/server", folder);
     const apiDirectory = join(folder);
-    const publicDirectory = join(".output/static");
+    const publicDirectory = join("./.output/static");
     // console.log('buildApiDirectory', buildApiDirectory);
     // console.log('apiDirectory', apiDirectory);
     // console.log('publicDirectory', publicDirectory);
@@ -53,6 +53,9 @@ export function createSwaggerSpec({
       // support load static files from public directory
       ...["swagger.yaml", "json"].map(
         (fileType) => `${publicDirectory}/**/**/*.${fileType}`
+      ),
+      ...["swagger.yaml", "json"].map(
+        (fileType) => `public/**/**/*.${fileType}`
       ),
     ];
   });
