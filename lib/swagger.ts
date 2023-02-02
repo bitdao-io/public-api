@@ -57,7 +57,7 @@ export function createSwaggerSpec({
       ...["swagger.yaml", "json"].map((fileType) => `**/**/*.${fileType}`),
     ];
   });
-  console.log("apiss", apis);
+  console.log("apis", apis);
   const options: Options = {
     apis, // files containing annotations as above
     ...swaggerOptions,
