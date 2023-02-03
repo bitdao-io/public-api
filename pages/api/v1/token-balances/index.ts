@@ -7,11 +7,11 @@ import {
 import { NextApiRequest, NextApiResponse } from "next";
 
 import {
-  BITDAO_CONTRACT_ADDRESS,
   BITDAO_BURN_ADDRESS,
-  BITDAO_TREASURY_ADDRESS,
+  BITDAO_CONTRACT_ADDRESS,
+  BITDAO_LOCKED_ADDRESSES,
   BITDAO_LP_WALLET_ADDRESS,
-  BITDAO_LOCKED_ADDRESSES
+  BITDAO_TREASURY_ADDRESS,
 } from "config/general";
 
 import { BigNumber, Contract } from "ethers";
@@ -19,7 +19,7 @@ import { formatUnits } from "ethers/lib/utils";
 
 /**
  * @swagger
- * /api/token-balances:
+ * /token-balances:
  *  get:
  *    tags: [Balance]
  *    summary: Get BIT balances
@@ -85,32 +85,36 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       // Example reading from a contract directly...
       const provider = await alchemy.config.getProvider();
 
-      const abi = [
-        "function totalSupply() view returns (uint256)",
-      ];
-      
+      const abi = ["function totalSupply() view returns (uint256)"];
+
       const erc20 = new Contract(BITDAO_CONTRACT_ADDRESS, abi, provider);
 
       return formatUnits(await erc20.totalSupply(), 18).toString();
     };
-    
+
     // subtract locked funds from totalSupplu
     const getCirculatingSupply = (
       totalSupply: string,
       bitBalanceTotal: number,
-      bitLPTokenTotal: number, 
+      bitLPTokenTotal: number,
       bitBurnedTotal: number,
       bitLockedTotal: number
     ) => {
       // take any BIT not in the circulating supply away from totalSupply
-      return `${parseFloat(totalSupply) - bitBalanceTotal - bitLPTokenTotal - bitBurnedTotal - bitLockedTotal}`;
+      return `${
+        parseFloat(totalSupply) -
+        bitBalanceTotal -
+        bitLPTokenTotal -
+        bitBurnedTotal -
+        bitLockedTotal
+      }`;
     };
 
     // returns the actual balance held within the TokenBalancesResponse
     const getBalance = (balance: TokenBalancesResponse) => {
-      return parseFloat(balance.tokenBalances[0].tokenBalance || "0")
-    }
-    
+      return parseFloat(balance.tokenBalances[0].tokenBalance || "0");
+    };
+
     // retrieve balance data for BITDAO_CONTRACT_ADDRESS given EOA address
     const getBalances = async (address: string) => {
       const balances = await alchemy.core.getTokenBalances(address, [
@@ -135,20 +139,19 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // get all async calls in parallel
     const [
-      bitTotalSupply, 
-      bitBalancesData, 
-      bitLPTokenBalancesData, 
+      bitTotalSupply,
+      bitBalancesData,
+      bitLPTokenBalancesData,
       bitBurnedBalancesData,
       // collect up all other addresses into an array (this represents anything passed in BITDAO_LOCKED_ADDRESSES)
       ...bitLockedBalancesData
-
     ] = await Promise.all([
       getTotalSupply(),
       getBalances(BITDAO_TREASURY_ADDRESS),
       getBalances(BITDAO_LP_WALLET_ADDRESS),
       getBalances(BITDAO_BURN_ADDRESS),
       // get balance from each of the locked addresses
-      ...BITDAO_LOCKED_ADDRESSES.map(async (address) => getBalances(address)) 
+      ...BITDAO_LOCKED_ADDRESSES.map(async (address) => getBalances(address)),
     ]);
 
     // extract the total from each of the balanceData structs
@@ -157,8 +160,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     const bitBurnedTotal = getBalance(bitBurnedBalancesData);
 
     // sum all balances in the list of locked addresses
-    const bitLockedTotal = bitLockedBalancesData.reduce((total: number, balance: TokenBalancesResponse) => total + getBalance(balance), 0);
-    
+    const bitLockedTotal = bitLockedBalancesData.reduce(
+      (total: number, balance: TokenBalancesResponse) =>
+        total + getBalance(balance),
+      0
+    );
+
     // construct results
     const results = {
       bitTotalSupply,
@@ -172,7 +179,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       bitBurnedTotal: `${bitBurnedTotal}`,
       bitLockedTotal: `${bitLockedTotal}`,
       // totalSupply with all locked/burned totals subtracted
-      bitCirculatingSupply: getCirculatingSupply(bitTotalSupply, bitBalanceTotal, bitLPTokenTotal, bitBurnedTotal, bitLockedTotal),
+      bitCirculatingSupply: getCirculatingSupply(
+        bitTotalSupply,
+        bitBalanceTotal,
+        bitLPTokenTotal,
+        bitBurnedTotal,
+        bitLockedTotal
+      ),
     };
 
     res.setHeader(

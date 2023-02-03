@@ -1,18 +1,15 @@
-import {
-  abbrvNumber,
-  getAnalyticsDataRecursivelyFrom,
-} from "@/services/analytics";
+import { getAnalyticsDataRecursivelyFrom } from "@/services/analytics";
 import { NextApiRequest, NextApiResponse } from "next";
 
 /**
  * @swagger
- * /api/pledged/total:
+ * /pledged/history:
  *  get:
  *    tags: [Pledged]
- *    summary: Get total
+ *    summary: Get history
  *
  *    description: |-
- *      **Returns total pledged**
+ *      **Returns pledged history by day**
  *
  *
  *    responses:
@@ -22,7 +19,7 @@ import { NextApiRequest, NextApiResponse } from "next";
  *        content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PledgedTotal'
+ *               $ref: '#/components/schemas/PledgedHistory'
  *
  *      500:
  *        description: alchemyApi not provided
@@ -55,11 +52,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // first result in the raw csv file is always incomplete...
     data.body.list.shift();
 
-    // get the total amount contributed to date...
-    const result = data.body.list.reduce((total, row) => {
-      return total + row.contributeVolume;
-    }, 0);
-
     // set up response...
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
@@ -80,7 +72,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      result: abbrvNumber(result),
+      results: data.body.list,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

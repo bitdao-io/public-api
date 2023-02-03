@@ -11,7 +11,7 @@ import { TreasuryToken } from "types/treasury.d";
 
 /**
  * @swagger
- * /api/portfolio:
+ * /portfolio:
  *  get:
  *    tags: [Balance]
  *    summary: Get treasury balances

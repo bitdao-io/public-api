@@ -6,13 +6,13 @@ import { NextApiRequest, NextApiResponse } from "next";
 
 /**
  * @swagger
- * /api/pledged:
+ * /pledged/total:
  *  get:
  *    tags: [Pledged]
- *    summary: Get history with totals
+ *    summary: Get total
  *
  *    description: |-
- *      **Returns pledged history by day with totals**
+ *      **Returns total pledged**
  *
  *
  *    responses:
@@ -22,7 +22,7 @@ import { NextApiRequest, NextApiResponse } from "next";
  *        content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Pledged'
+ *               $ref: '#/components/schemas/PledgedTotal'
  *
  *      500:
  *        description: alchemyApi not provided
@@ -56,16 +56,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     data.body.list.shift();
 
     // get the total amount contributed to date...
-    const total = data.body.list.reduce((total, row) => {
+    const result = data.body.list.reduce((total, row) => {
       return total + row.contributeVolume;
     }, 0);
-
-    // construct result - return everything
-    const result = {
-      total: abbrvNumber(total),
-      totalFull: total,
-      history: data.body.list,
-    };
 
     // set up response...
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -87,7 +80,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      result: result,
+      result: abbrvNumber(result),
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
