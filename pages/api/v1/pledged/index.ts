@@ -1,10 +1,35 @@
 import {
-  NextApiRequest,
-  NextApiResponse
-} from "next";
-import {
-  getAnalyticsDataRecursivelyFrom
+  abbrvNumber,
+  getAnalyticsDataRecursivelyFrom,
 } from "@/services/analytics";
+import { NextApiRequest, NextApiResponse } from "next";
+
+/**
+ * @swagger
+ * /pledged:
+ *  get:
+ *    tags: [Pledged]
+ *    summary: Get history with totals
+ *
+ *    description: |-
+ *      **Returns pledged history by day with totals**
+ *
+ *
+ *    responses:
+ *
+ *      200:
+ *        description: treasury balances
+ *        content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Pledged'
+ *
+ *      500:
+ *        description: alchemyApi not provided
+ *        success: false
+ *        statusCode: 500
+ *        message: alchemyApi not provided
+ */
 
 // - Constants
 const CACHE_TIME = 1800;
@@ -30,6 +55,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     // first result in the raw csv file is always incomplete...
     data.body.list.shift();
 
+    // get the total amount contributed to date...
+    const total = data.body.list.reduce((total, row) => {
+      return total + row.contributeVolume;
+    }, 0);
+
+    // construct result - return everything
+    const result = {
+      total: abbrvNumber(total),
+      totalFull: total,
+      history: data.body.list,
+    };
+
     // set up response...
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
@@ -50,18 +87,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      results: data.body.list,
+      result: result,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        statusCode: 500,
-        message: error?.message
-      });
+    res.status(500).json({
+      success: false,
+      statusCode: 500,
+      message: error?.message,
+    });
   }
 };
 
