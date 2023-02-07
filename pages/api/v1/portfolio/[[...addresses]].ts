@@ -48,9 +48,107 @@ const alchemySettings = {
 };
 const ETH_DECIMALS = 18;
 
-// RE:
-// - https://docs.alchemy.com/reference/sdk-gettokenbalances
-// - https://docs.alchemy.com/docs/how-to-get-all-tokens-owned-by-an-address
+// Get the results using the alchemyApi key provided
+// RE: - https://docs.alchemy.com/reference/sdk-gettokenbalances
+//     - https://docs.alchemy.com/docs/how-to-get-all-tokens-owned-by-an-address
+export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
+  alchemySettings.apiKey = String(alchemyApi);
+
+  const alchemy = new Alchemy(alchemySettings);
+
+  const [balancesSet, ethBalanceInBigNumber, { ethereum }] = await Promise.all([
+    Promise.all(
+      addresses.map(async (item) => {
+        return await alchemy.core.getTokenBalances(item);
+      })
+    ),
+    alchemy.core.getBalance(addresses[0]),
+    fetch(
+      `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
+    ).then(async (response) => await response.json()),
+  ]);
+
+  let totalBalances: Array<TokenBalance> = [];
+  for (const item of balancesSet) {
+    totalBalances = [...totalBalances, ...item.tokenBalances];
+  }
+  const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
+    return token.tokenBalance !== HashZero;
+  });
+
+  // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
+  const ethBalanceInNumber = Number(
+    formatUnits(ethBalanceInBigNumber, ETH_DECIMALS)
+  );
+
+  const ethToken: TreasuryToken = {
+    address: "eth",
+    amount: ethBalanceInNumber,
+    logo: "https://token-icons.s3.amazonaws.com/eth.png",
+    name: "Ethereum",
+    price: ethereum.usd,
+    symbol: "ETH",
+    decimals: ETH_DECIMALS,
+    value: ethBalanceInNumber * ethereum.usd,
+    perOfHoldings: "%",
+  };
+
+  const tokensAddresses = nonZeroTokenBalances.map(
+    (token: TokenBalance) => token.contractAddress
+  );
+  const tokenUSDPricesResponse = await fetch(
+    `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD`
+  );
+  const tokenUSDPrices = await tokenUSDPricesResponse.json(); // TODO: type it
+
+  const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
+    (token: TokenBalance) => {
+      return tokenUSDPrices[token.contractAddress]?.usd;
+    }
+  );
+
+  const metadataSet = await Promise.all(
+    withPriceNonZeroBalances.map((item) =>
+      alchemy.core.getTokenMetadata(item.contractAddress)
+    )
+  );
+
+  let totalValueInUSD = ethToken.value;
+  const erc20Tokens: Array<TreasuryToken> = [];
+  withPriceNonZeroBalances.forEach((item, index) => {
+    const balanceInString = item.tokenBalance;
+
+    const balanceInNumber = balanceInString
+      ? Number(formatUnits(balanceInString, metadataSet[index].decimals || 18))
+      : 0;
+
+    const erc20Token: TreasuryToken = {
+      address: item.contractAddress,
+      amount: balanceInNumber,
+      name: metadataSet[index].name ?? "",
+      symbol: metadataSet[index].symbol ?? "",
+      decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
+      logo: metadataSet[index].logo ?? "",
+      price: tokenUSDPrices[item.contractAddress].usd,
+      value: balanceInNumber * tokenUSDPrices[item.contractAddress].usd,
+      perOfHoldings: "%",
+    };
+
+    erc20Tokens.push(erc20Token);
+    totalValueInUSD += erc20Token.value;
+  });
+
+  const portfolio = [...erc20Tokens, ethToken].map((token) => {
+    token.perOfHoldings =
+      Math.round((100 / totalValueInUSD) * token.value * 100) / 100 + "%";
+
+    return token;
+  });
+
+  return { totalValueInUSD, portfolio };
+};
+
+// exporting nextjs req handler as default
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
     const alchemyApi = req.query.alchemyApi;
@@ -61,14 +159,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         message: "alchemyApi not provided",
       });
     }
-
-    let addresses = undefined;
-    if (req.query.addresses) {
-      addresses = (req.query.addresses[0] as string).split(",");
-    } else {
-      addresses = [BITDAO_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
-    }
-
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
       "Access-Control-Allow-Headers",
@@ -82,101 +172,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(200).json({});
     }
 
-    alchemySettings.apiKey = String(req.query.alchemyApi);
-
-    const alchemy = new Alchemy(alchemySettings);
-
-    const [balancesSet, ethBalanceInBigNumber, { ethereum }] =
-      await Promise.all([
-        Promise.all(
-          addresses.map(async (item) => {
-            return await alchemy.core.getTokenBalances(item);
-          })
-        ),
-        alchemy.core.getBalance(addresses[0]),
-        fetch(
-          `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
-        ).then(async (response) => await response.json()),
-      ]);
-
-    let totalBalances: Array<TokenBalance> = [];
-    for (const item of balancesSet) {
-      totalBalances = [...totalBalances, ...item.tokenBalances];
+    let addresses = undefined;
+    if (req.query.addresses) {
+      addresses = (req.query.addresses[0] as string).split(",");
+    } else {
+      addresses = [BITDAO_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
     }
-    const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
-      return token.tokenBalance !== HashZero;
-    });
 
-    // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
-    const ethBalanceInNumber = Number(
-      formatUnits(ethBalanceInBigNumber, ETH_DECIMALS)
-    );
-
-    const ethToken: TreasuryToken = {
-      address: "eth",
-      amount: ethBalanceInNumber,
-      logo: "https://token-icons.s3.amazonaws.com/eth.png",
-      name: "Ethereum",
-      price: ethereum.usd,
-      symbol: "ETH",
-      decimals: ETH_DECIMALS,
-      value: ethBalanceInNumber * ethereum.usd,
-      perOfHoldings: "%",
-    };
-
-    const tokensAddresses = nonZeroTokenBalances.map(
-      (token: TokenBalance) => token.contractAddress
-    );
-    const tokenUSDPricesResponse = await fetch(
-      `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD`
-    );
-    const tokenUSDPrices = await tokenUSDPricesResponse.json(); // TODO: type it
-
-    const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
-      (token: TokenBalance) => {
-        return tokenUSDPrices[token.contractAddress]?.usd;
-      }
-    );
-
-    const metadataSet = await Promise.all(
-      withPriceNonZeroBalances.map((item) =>
-        alchemy.core.getTokenMetadata(item.contractAddress)
-      )
-    );
-
-    let totalValueInUSD = ethToken.value;
-    const erc20Tokens: Array<TreasuryToken> = [];
-    withPriceNonZeroBalances.forEach((item, index) => {
-      const balanceInString = item.tokenBalance;
-
-      const balanceInNumber = balanceInString
-        ? Number(
-            formatUnits(balanceInString, metadataSet[index].decimals || 18)
-          )
-        : 0;
-
-      const erc20Token: TreasuryToken = {
-        address: item.contractAddress,
-        amount: balanceInNumber,
-        name: metadataSet[index].name ?? "",
-        symbol: metadataSet[index].symbol ?? "",
-        decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
-        logo: metadataSet[index].logo ?? "",
-        price: tokenUSDPrices[item.contractAddress].usd,
-        value: balanceInNumber * tokenUSDPrices[item.contractAddress].usd,
-        perOfHoldings: "%",
-      };
-
-      erc20Tokens.push(erc20Token);
-      totalValueInUSD += erc20Token.value;
-    });
-
-    const portfolio = [...erc20Tokens, ethToken].map((token) => {
-      token.perOfHoldings =
-        Math.round((100 / totalValueInUSD) * token.value * 100) / 100 + "%";
-
-      return token;
-    });
+    // get the result from dataHandler
+    const result = dataHandler(alchemyApi as string, addresses);
 
     res.setHeader(
       "Cache-Control",
@@ -185,7 +189,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     res.json({
       success: true,
       statusCode: 200,
-      value: { totalValueInUSD, portfolio },
+      value: result,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
