@@ -34,6 +34,7 @@ export const getAnalyticsDataRecursivelyFrom = async (
   body: {
     list: {
       id?: string,
+      date?: string;
       analytics?: string,
       contributeVolume: number
     }[]

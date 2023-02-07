@@ -33,9 +33,9 @@ export const mapAnalyticsData = async () => {
   ];
 
   // all entries from getAnalyticsDataRecursivelyFrom minus today
-  const analyticEntries = _analyticsData.body.list.map((entry, key) => {
+  const analyticEntries = _analyticsData.body.list.map((entry) => {
     // detail the entry to mark joins
-    entry.id = `${BITDAO_CONTRACT_ADDRESS}-${key}`;
+    entry.id = `${BITDAO_CONTRACT_ADDRESS}-${entry.date}`;
     entry.analytics = BITDAO_CONTRACT_ADDRESS;
 
     return entry;
