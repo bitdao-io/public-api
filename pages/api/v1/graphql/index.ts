@@ -80,7 +80,7 @@ const schema = parse(`
   type PortfolioBalance @entity {
     id: ID!
     portfolio: Portfolio!
-    token: Token
+    token: Token!
     amount: BigDecimal
     price: BigDecimal
     value: BigDecimal

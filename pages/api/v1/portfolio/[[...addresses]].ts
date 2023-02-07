@@ -3,6 +3,8 @@ import { formatUnits } from "@ethersproject/units";
 import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
+import { getAddress } from "ethers/lib/utils";
+
 import {
   BITDAO_LP_WALLET_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
@@ -123,7 +125,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       : 0;
 
     const erc20Token: TreasuryToken = {
-      address: item.contractAddress,
+      address: getAddress(item.contractAddress),
       amount: balanceInNumber,
       name: metadataSet[index].name ?? "",
       symbol: metadataSet[index].symbol ?? "",
