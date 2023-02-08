@@ -103,8 +103,8 @@ const setup = async (): Promise<Entities> => {
   ];
   // map these from the mapping fns (they might also mutate the tokens list)
   const { analytics, analyticEntries } = await mapAnalyticsData();
-  const { portfolios, portfolioBalances } = await mapPortfolioData(tokens);
   const { tokenBalances, holders } = await mapTokenBalanceData(tokens);
+  const { portfolios, portfolioBalances } = await mapPortfolioData(tokens);
 
   // Provide the entities as an object of arrays
   return {
