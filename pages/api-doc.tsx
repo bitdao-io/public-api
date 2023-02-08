@@ -22,7 +22,7 @@ function ApiDoc({ spec }: InferGetStaticPropsType<typeof getStaticProps>) {
 }
 
 export const getStaticProps: GetStaticProps = async () => {
-  const spec: Record<string, any> = createSwaggerSpec(SWAGGER_DESCRIPTION);
+  const spec: object = createSwaggerSpec(SWAGGER_DESCRIPTION);
 
   return {
     props: {
