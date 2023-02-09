@@ -36,6 +36,7 @@ export const getAnalyticsDataRecursivelyFrom = async (
       id?: string,
       date?: string;
       analytics?: string,
+      dateTime?: Date,
       contributeVolume: number
     }[]
   }

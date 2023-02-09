@@ -37,6 +37,7 @@ export const mapAnalyticsData = async () => {
     // detail the entry to mark joins
     entry.id = `${BITDAO_CONTRACT_ADDRESS}-${entry.date}`;
     entry.analytics = BITDAO_CONTRACT_ADDRESS;
+    entry.dateTime = new Date(entry.date!)
 
     return entry;
   });

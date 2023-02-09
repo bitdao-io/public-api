@@ -25,6 +25,7 @@ const schema = parse(`
     id: ID
     analytics: Analytic!
     date: String
+    dateTime: Timestamp
     ethPrice: BigDecimal
     bitPrice: BigDecimal
     tradeVolume: BigDecimal
