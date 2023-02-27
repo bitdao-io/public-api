@@ -182,7 +182,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     // get the result from dataHandler
-    const result = dataHandler(alchemyApi as string, addresses);
+    const result = await dataHandler(alchemyApi as string, addresses);
 
     res.setHeader(
       "Cache-Control",
