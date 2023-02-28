@@ -58,6 +58,7 @@ const schema = parse(`
     totalSupply: BigDecimal
     circulatingSupply: BigDecimal
     lockedTotal: BigDecimal
+    burnedTotal: BigDecimal
     balanceTotal: BigDecimal
     LPTokenTotal: BigDecimal
     balances: [Holder!]! @derivedFrom(field: "token")
@@ -134,6 +135,7 @@ export default createSubgraph<NextApiRequest, NextApiResponse>({
         LPTokenTotal
         balanceTotal
         lockedTotal
+        burnedTotal
         totalSupply
         balances {
           name
