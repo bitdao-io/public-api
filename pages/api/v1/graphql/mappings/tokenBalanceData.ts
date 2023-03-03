@@ -50,53 +50,65 @@ const updateHoldersEntry = (
 
 // map TokenBalance entries into the holder entities and record TokenBalance entry for summary
 export const mapTokenBalanceData = async (tokens: { address: string }[]) => {
-  // get the balance data
-  const _tokenBalances = await TokenBalance(process.env.ALCHEMY_API_KEY!);
+  // wrap in a try catch to avoid 500 error
+  try {
+    // get the balance data
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const _tokenBalances = await TokenBalance(process.env.ALCHEMY_API_KEY!);
 
-  // construct holders from mapped content
-  const holders: Holders[] = [];
+    // construct holders from mapped content
+    const holders: Holders[] = [];
 
-  // construct new tokenBalances data
-  const tokenBalances = [
-    {
-      id: BITDAO_CONTRACT_ADDRESS,
-      name: "bit",
-      token: BITDAO_CONTRACT_ADDRESS,
-      address: BITDAO_CONTRACT_ADDRESS,
-      totalSupply: _tokenBalances.bitTotalSupply,
-      circulatingSupply: _tokenBalances.bitCirculatingSupply,
-      lockedTotal: _tokenBalances.bitLockedTotal,
-      burnedTotal: _tokenBalances.bitBurnedTotal,
-      balanceTotal: _tokenBalances.bitBalanceTotal,
-      LPTokenTotal: _tokenBalances.bitLPTokenTotal,
-    },
-  ];
+    // construct new tokenBalances data
+    const tokenBalances = [
+      {
+        id: BITDAO_CONTRACT_ADDRESS,
+        name: "bit",
+        token: BITDAO_CONTRACT_ADDRESS,
+        address: BITDAO_CONTRACT_ADDRESS,
+        totalSupply: _tokenBalances.bitTotalSupply,
+        circulatingSupply: _tokenBalances.bitCirculatingSupply,
+        lockedTotal: _tokenBalances.bitLockedTotal,
+        burnedTotal: _tokenBalances.bitBurnedTotal,
+        balanceTotal: _tokenBalances.bitBalanceTotal,
+        LPTokenTotal: _tokenBalances.bitLPTokenTotal,
+      },
+    ];
 
-  // prepare to map (we'll place each entry against its name + data)
-  [
-    {
-      name: "BalancesData",
-      data: _tokenBalances.bitBalancesData,
-    },
-    {
-      name: "BurnedBalancesData",
-      data: _tokenBalances.bitBurnedBalancesData,
-    },
-    {
-      name: "LPTokenBalancesData",
-      data: _tokenBalances.bitLPTokenBalancesData,
-    },
-  ].map(({ name, data }) => updateHoldersEntry(holders, name, data));
+    // prepare to map (we'll place each entry against its name + data)
+    [
+      {
+        name: "BalancesData",
+        data: _tokenBalances.bitBalancesData,
+      },
+      {
+        name: "BurnedBalancesData",
+        data: _tokenBalances.bitBurnedBalancesData,
+      },
+      {
+        name: "LPTokenBalancesData",
+        data: _tokenBalances.bitLPTokenBalancesData,
+      },
+    ].map(({ name, data }) => updateHoldersEntry(holders, name, data));
 
-  // apply the same to the locked balanceData (these all share a name but not an address)
-  _tokenBalances.bitLockedBalancesData.map((data) =>
-    updateHoldersEntry(holders, `LockedBalanceData-${data.address}`, data)
-  );
+    // apply the same to the locked balanceData (these all share a name but not an address)
+    _tokenBalances.bitLockedBalancesData.map((data) =>
+      updateHoldersEntry(holders, `LockedBalanceData-${data.address}`, data)
+    );
+    // return the mapped entities
+    return {
+      tokens,
+      holders,
+      tokenBalances,
+    };
+  } catch {
 
-  // return the mapped entities
-  return {
-    tokenBalances,
-    holders,
-    tokens,
-  };
+    // return empty mapping
+    return {
+      tokens,
+      holders: [],
+      tokenBalances: [],
+    };
+  }
+
 };
