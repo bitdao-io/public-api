@@ -105,6 +105,13 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
 
   const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
     (token: TokenBalance) => {
+      // price could be missing for peeps -- add it back in here if absent...
+      if (token.contractAddress === "0xba962a81f78837751be8a177378d582f337084e6") {
+        tokenUSDPrices[token.contractAddress] = tokenUSDPrices[token.contractAddress] || {
+          usd: 650
+        }
+      }
+
       return tokenUSDPrices[token.contractAddress]?.usd;
     }
   );
