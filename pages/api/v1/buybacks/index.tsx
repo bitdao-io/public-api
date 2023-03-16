@@ -1,6 +1,4 @@
-import path from 'path';
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getCSVData } from '@/utils/dataHelpers';
 import { mapBuybacksData } from '../graphql/mappings/buybacksData';
 
 /**
