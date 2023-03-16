@@ -120,8 +120,8 @@ const setup = async (): Promise<Entities> => {
   const { tokenBalances, holders } = await mapTokenBalanceData(tokens);
   const { portfolios, portfolioBalances } = await mapPortfolioData(tokens);
 
-  // resolve data through parser - set this up async so as not to block any queries which dont use the data
-  const buybacks = async () => await mapBuybacksData();
+  // resolve data through parser
+  const buybacks = await mapBuybacksData();
 
   // Provide the entities as an object of arrays
   return {
