@@ -2,10 +2,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 // Construct subgraph flavoured graphql server
-import { parse, createSubgraph, Entities } from "subgraphql";
+import { parse, createSubgraph, Entities, Key, Operation } from "subgraphql";
 
 // Base most entity ids on the BITDAO_CONTRACT_ADDRESS
-import { BITDAO_CONTRACT_ADDRESS } from "@/config/general";
+import { BITDAO_CONTRACT_ADDRESS, USDT_CONTRACT_ADDRESS } from "@/config/general";
 
 // Map from the internal api to GraphQL Entity arrays
 import { mapAnalyticsData } from "./mappings/analyticsData";
@@ -93,9 +93,9 @@ const schema = parse(`
   type Buyback @entity {
     id: ID!
     date_time_utc: Timestamp
-    asset_1: String
+    asset_1: Token
     asset_1_amount: BigDecimal
-    asset_2: String
+    asset_2: Token
     asset_2_amount: BigDecimal
     rate: BigDecimal
   }
@@ -112,16 +112,24 @@ const setup = async (): Promise<Entities> => {
       symbol: "BIT",
       name: "BitDAO",
       decimals: 18,
-      logo: "",
+      logo: "https://static.alchemyapi.io/images/assets/11221.png",
     },
+    {
+      id: USDT_CONTRACT_ADDRESS,
+      address: USDT_CONTRACT_ADDRESS,
+      symbol: "USDT",
+      name: "Tether",
+      decimals: 6,
+      logo: "https://static.alchemyapi.io/images/assets/825.png",
+    }
   ];
   // map these from the mapping fns (they might also mutate the tokens list)
   const { analytics, analyticEntries } = await mapAnalyticsData();
   const { tokenBalances, holders } = await mapTokenBalanceData(tokens);
   const { portfolios, portfolioBalances } = await mapPortfolioData(tokens);
 
-  // resolve data through parser
-  const buybacks = await mapBuybacksData();
+  // resolve data through parser - set this up async so as not to block any queries which dont use the data
+  const buybacks = await mapBuybacksData()
 
   // Provide the entities as an object of arrays
   return {
