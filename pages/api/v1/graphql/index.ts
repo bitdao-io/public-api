@@ -155,6 +155,45 @@ export default createSubgraph<NextApiRequest, NextApiResponse>({
   // set a default query for graphiql
   defaultQuery: `
     {
+      # a new analyticsEntry will be added every day...
+      analytics {
+        total
+        totalAbbrv
+        entries(first: 1) {
+          date
+          bitAmount
+          bitCount
+          bitPrice
+          contributeVolume
+          ethAmount
+          ethCount
+          ethPrice
+          tradeVolume
+          usdtAmount
+          usdtCount
+        }
+      }
+      # this data will not change...
+      buybacks(skip: 144905, orderBy: date_time_utc, orderDirection: desc) {
+        id
+        date_time_utc
+        asset_1 {
+          symbol
+          logo
+          name
+          decimals
+        }
+        asset_2 {
+          symbol
+          logo
+          name
+          decimals
+        }
+        asset_1_amount
+        asset_2_amount
+        rate
+      }
+      # these balances reflect onchain values....
       tokenBalances {
         LPTokenTotal
         balanceTotal
@@ -170,11 +209,12 @@ export default createSubgraph<NextApiRequest, NextApiResponse>({
           }
         }
       }
+      # these balances reflect onchain values...
       portfolios {
         name
         totalValueInUSD
         totalValueInUSDAbbrv
-        portfolio {
+        portfolio(where: { amount_gt: "1000" }) {
           amount
           id
           perOfHoldings
@@ -185,23 +225,6 @@ export default createSubgraph<NextApiRequest, NextApiResponse>({
             name
             symbol
           }
-        }
-      }
-      analytics {
-        total
-        totalAbbrv
-        entries {
-          date
-          bitAmount
-          bitCount
-          bitPrice
-          contributeVolume
-          ethAmount
-          ethCount
-          ethPrice
-          tradeVolume
-          usdtAmount
-          usdtCount
         }
       }
     }

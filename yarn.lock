@@ -6301,10 +6301,10 @@ stylis@^4.0.6:
   resolved "https://registry.yarnpkg.com/stylis/-/stylis-4.1.3.tgz#fd2fbe79f5fed17c55269e16ed8da14c84d069f7"
   integrity sha512-GP6WDNWf+o403jrEp9c5jibKavrtLW+/qYGhFxFrG8maXhwTBI7gLLhiBb0o7uFccWN+EOS9aMO6cGHWAO07OA==
 
-subgraphql@^0.0.0-rfc.17:
-  version "0.0.0-rfc.17"
-  resolved "https://registry.yarnpkg.com/subgraphql/-/subgraphql-0.0.0-rfc.17.tgz#b7101bc9630a1a40fcbbd88300868457860a6a12"
-  integrity sha512-FLJeTQKCtXDjwu6HOnrWRf7yT0vKMJMSBxazclMHBdMWqXXX5di1bSlZUeJ0nhIzFwAn0NAlm3ADVW8CtQk3xQ==
+subgraphql@^0.0.0-rfc.18:
+  version "0.0.0-rfc.18"
+  resolved "https://registry.yarnpkg.com/subgraphql/-/subgraphql-0.0.0-rfc.18.tgz#440787669d79b3c4eef9b31deb4a88830c220717"
+  integrity sha512-ceGaMImynhSRkifjOPQCeLGZ9wFAapjj7G9HUy5c+WvgkkT1GnVoSrvftmgvH3ltbZ9T+TFbZjNFoBq2zL0VZg==
   dependencies:
     "@graphql-yoga/render-graphiql" "~3.3.0"
     graphql "^16.6.0"
