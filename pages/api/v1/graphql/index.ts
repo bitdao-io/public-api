@@ -11,6 +11,7 @@ import { BITDAO_CONTRACT_ADDRESS } from "@/config/general";
 import { mapAnalyticsData } from "./mappings/analyticsData";
 import { mapPortfolioData } from "./mappings/portfolioData";
 import { mapTokenBalanceData } from "./mappings/tokenBalanceData";
+import { mapBuybacksData } from "./mappings/buybacksData";
 
 // parse the schema into a SimpleSchema
 const schema = parse(`
@@ -88,6 +89,17 @@ const schema = parse(`
     value: BigDecimal
     perOfHoldings: String
   }
+
+  type Buyback @entity {
+    id: ID!
+    date_time_utc: Timestamp
+    asset_1: String
+    asset_1_amount: BigDecimal
+    asset_2: String
+    asset_2_amount: BigDecimal
+    rate: BigDecimal
+  }
+
 `);
 
 // run set-up to fill entities async
@@ -108,6 +120,9 @@ const setup = async (): Promise<Entities> => {
   const { tokenBalances, holders } = await mapTokenBalanceData(tokens);
   const { portfolios, portfolioBalances } = await mapPortfolioData(tokens);
 
+  // resolve data through parser - set this up async so as not to block any queries which dont use the data
+  const buybacks = async () => await mapBuybacksData();
+
   // Provide the entities as an object of arrays
   return {
     Analytic: analytics,
@@ -117,6 +132,7 @@ const setup = async (): Promise<Entities> => {
     TokenBalance: tokenBalances,
     Portfolio: portfolios,
     PortfolioBalance: portfolioBalances,
+    Buyback: buybacks
   };
 };
 

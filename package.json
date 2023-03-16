@@ -20,6 +20,7 @@
     "@types/react-dom": "18.0.10",
     "alchemy-sdk": "^2.3.0",
     "autoprefixer": "^10.4.13",
+    "csv-parse": "^5.3.6",
     "eslint": "8.32.0",
     "eslint-config-next": "13.1.2",
     "ethers": "^5.7.2",
