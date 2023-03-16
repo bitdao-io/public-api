@@ -11,36 +11,39 @@ paths: {}
 components:
   schemas:
     Buybacks:
-      properties:
-        id:
-          title: Buybacks.id
-          type: string
-        date_time_utc:
-          title: Buybacks.date_time_utc
-          type: string
-        asset_1:
-          title: Buybacks.asset_1
-          type: string
-        asset_2:
-          title: Buybacks.asset_2
-          type: string
-        asset_1_amount:
-          title: Buybacks.asset_1_amount
-          type: string
-        asset_2_amount:
-          title: Buybacks.asset_2_amount
-          type: string
-        rate:
-          title: Buybacks.rate
-          type: string
-      required:
-        - id
-        - date_time_utc
-        - asset_1
-        - asset_2
-        - asset_1_amount
-        - asset_2_amount
-        - rate
-      additionalProperties: false
-      title: Buybacks
-      type: object
+      items:
+        properties:
+          id:
+            title: Buybacks.[].id
+            type: string
+          date_time_utc:
+            title: Buybacks.[].date_time_utc
+            type: string
+          asset_1:
+            title: Buybacks.[].asset_1
+            type: string
+          asset_2:
+            title: Buybacks.[].asset_2
+            type: string
+          asset_1_amount:
+            title: Buybacks.[].asset_1_amount
+            type: string
+          asset_2_amount:
+            title: Buybacks.[].asset_2_amount
+            type: string
+          rate:
+            title: Buybacks.[].rate
+            type: string
+        required:
+          - id
+          - date_time_utc
+          - asset_1
+          - asset_2
+          - asset_1_amount
+          - asset_2_amount
+          - rate
+        additionalProperties: false
+        title: Buybacks.[]
+        type: object
+      title: Buybacks.[]
+      type: array

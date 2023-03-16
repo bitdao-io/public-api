@@ -1,5 +1,5 @@
-// Buybacks endpoint will export array of...
-export interface Buybacks {
+// Buybacks endpoint will export array
+export type Buybacks = {
   id: string
   date_time_utc: string
   asset_1: string

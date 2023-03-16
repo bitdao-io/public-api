@@ -8,7 +8,7 @@ export const csvParser = (resolve: (value?: unknown) => void, reject: (reason: u
     const json = data.map((values: unknown[]) => {
       
       return headers.reduce((items: Record<string, unknown>, header: string, key: number) => {
-        items[header?.toLowerCase().replace(/\s/g, "_").replace("(", "_").replace(")", "") || "id"] = values[key]
+        items[header?.toLowerCase()?.replace(/\s/g, "_")?.replace("(", "_")?.replace(")", "") || "id"] = values[key]
         
         return items;
       }, {})
