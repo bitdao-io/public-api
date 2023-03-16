@@ -6,10 +6,10 @@ import { mapBuybacksData } from '../graphql/mappings/buybacksData';
  * /buybacks:
  *  get:
  *    tags: [Buybacks]
- *    summary: Get buyback transaction data (* note this is limited to the most recent 10,000 entries, for the full set use the graphql endpoint (https://api-public.bitdao.io/api/v1/graphql))
+ *    summary: Get buyback transaction data
  *
  *    description: |-
- *      **Returns all buyback transactions**
+ *      **Returns all buyback transactions (\* note this is limited to the most recent 10,000 entries, for the full set use the graphql endpoint (https://api-public.bitdao.io/api/v1/graphql))**
  *
  *    responses:
  *
