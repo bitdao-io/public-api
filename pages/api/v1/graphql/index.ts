@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
 // Construct subgraph flavoured graphql server
-import { parse, createSubgraph, Entities, Key, Operation } from "subgraphql";
+import { parse, createSubgraph, Entities } from "subgraphql";
 
 // Base most entity ids on the BITDAO_CONTRACT_ADDRESS
 import { BITDAO_CONTRACT_ADDRESS, USDT_CONTRACT_ADDRESS } from "@/config/general";
