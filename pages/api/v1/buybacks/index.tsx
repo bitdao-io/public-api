@@ -24,7 +24,7 @@ import { mapBuybacksData } from '../graphql/mappings/buybacksData';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 
   // resolve data through parser
-  const data = await mapBuybacksData();
+  const data = await mapBuybacksData(true);
   
   // Return the content of the data file in json format
   res.status(200).json(data);
