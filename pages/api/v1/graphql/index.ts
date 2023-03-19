@@ -128,7 +128,7 @@ const setup = async (): Promise<Entities> => {
   const { tokenBalances, holders } = await mapTokenBalanceData(tokens);
   const { portfolios, portfolioBalances } = await mapPortfolioData(tokens);
 
-  // resolve data through parser - set this up async so as not to block any queries which dont use the data
+  // resolve data through parser (all results are limited to a max of 500 entries if no 'first' arg is provided)
   const buybacks = await mapBuybacksData()
 
   // Provide the entities as an object of arrays
