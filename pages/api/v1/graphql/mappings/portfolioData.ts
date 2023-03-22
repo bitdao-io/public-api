@@ -33,15 +33,17 @@ export const mapPortfolioData = async (tokens: { address: string }[]) => {
 
     // construct array of PortfolioBalances
     const portfolioBalances = _portfolioBalances.portfolio.map((balance, key) => {
+      // if this is an LP balance then we should make a new token to show it as such
+      const tokenAddress = balance.parent === BITDAO_LP_WALLET_ADDRESS ? balance.parent + '-' + balance.address : balance.address
       // record the token if its not in the tokens list
       const tokenIndex = tokens.findIndex((token) => {
-        return token.address === balance.address;
+        return token.address === tokenAddress;
       });
       const token = {
-        id: balance.address,
+        id: tokenAddress,
         address: balance.address,
         symbol: balance.symbol,
-        name: balance.name,
+        name: (balance.parent === BITDAO_LP_WALLET_ADDRESS ? "Univ3 LP " : "") + balance.name,
         decimals: balance.decimals,
         logo: balance.logo,
       };
@@ -55,7 +57,8 @@ export const mapPortfolioData = async (tokens: { address: string }[]) => {
       return {
         id: `BitDAO Treasury-${key}`,
         portfolio: `${BITDAO_TREASURY_ADDRESS}-${BITDAO_LP_WALLET_ADDRESS}`,
-        token: balance.address,
+        heldBy: balance.parent,
+        token: tokenAddress,
         amount: balance.amount,
         perOfHoldings: balance.perOfHoldings,
         // lock the value and price to 2dps (these are USD amounts)

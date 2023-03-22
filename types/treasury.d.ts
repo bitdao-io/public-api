@@ -8,6 +8,7 @@ interface TreasuryToken {
   symbol: string;
   value: number;
   perOfHoldings: string;
+  parent: string;
 }
 
 export type { TreasuryToken };

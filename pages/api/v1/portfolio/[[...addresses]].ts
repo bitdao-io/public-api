@@ -70,9 +70,13 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     ).then(async (response) => await response.json()),
   ]);
 
-  let totalBalances: Array<TokenBalance> = [];
+  let totalBalances: Array<TokenBalance & { parent: string }> = [];
   for (const item of balancesSet) {
-    totalBalances = [...totalBalances, ...item.tokenBalances];
+    totalBalances = [...totalBalances, ...(item.tokenBalances as unknown as Array<TokenBalance & { parent: string }>).map((balance) => {
+      balance.parent = item.address
+      
+      return balance
+    })];
   }
   const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
     return token.tokenBalance !== HashZero;
@@ -85,6 +89,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
 
   const ethToken: TreasuryToken = {
     address: "eth",
+    parent: getAddress(addresses[0]),
     amount: ethBalanceInNumber,
     logo: "https://token-icons.s3.amazonaws.com/eth.png",
     name: "Ethereum",
@@ -133,6 +138,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
 
     const erc20Token: TreasuryToken = {
       address: getAddress(item.contractAddress),
+      parent: getAddress(item.parent),
       amount: balanceInNumber,
       name: metadataSet[index].name ?? "",
       symbol: metadataSet[index].symbol ?? "",
