@@ -42,8 +42,8 @@ export const mapPortfolioData = async (tokens: { address: string }[]) => {
       const token = {
         id: tokenAddress,
         address: balance.address,
-        symbol: balance.symbol,
-        name: (balance.parent === BITDAO_LP_WALLET_ADDRESS ? "Univ3 LP " : "") + balance.name,
+        symbol: (balance.parent === BITDAO_LP_WALLET_ADDRESS ? "Univ3 LP " : "") + balance.symbol,
+        name: balance.name,
         decimals: balance.decimals,
         logo: balance.logo,
       };
