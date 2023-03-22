@@ -8,6 +8,7 @@ import {
   BITDAO_TREASURY_ADDRESS,
 } from "config/general";
 import { TreasuryToken } from "types/treasury.d";
+import { getAddress } from "ethers/lib/utils";
 
 /**
  * @swagger
@@ -120,9 +121,13 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         ).then(async (response) => await response.json()),
       ]);
 
-    let totalBalances: Array<TokenBalance> = [];
+    let totalBalances: Array<TokenBalance & { parent: string }> = [];
     for (const item of balancesSet) {
-      totalBalances = [...totalBalances, ...item.tokenBalances];
+      totalBalances = [...totalBalances, ...(item.tokenBalances as unknown as Array<TokenBalance & { parent: string }>).map((balance) => {
+        balance.parent = item.address
+        
+        return balance
+      })];
     }
     const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
       return token.tokenBalance !== HashZero;
@@ -135,6 +140,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     const ethToken: TreasuryToken = {
       address: "eth",
+      parent: getAddress(addresses[0]),
       amount: ethBalanceInNumber,
       logo: "https://token-icons.s3.amazonaws.com/eth.png",
       name: "Ethereum",
@@ -183,6 +189,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const erc20Token: TreasuryToken = {
           address: item.contractAddress,
+          parent: getAddress(item.parent),
           amount: balanceInNumber,
           name: metadataSet[index].name ?? "",
           symbol: metadataSet[index].symbol ?? "",
