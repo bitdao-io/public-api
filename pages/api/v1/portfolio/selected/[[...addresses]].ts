@@ -50,7 +50,8 @@ import { getAddress } from "ethers/lib/utils";
  *        message: alchemyApi not provided
  */
 const CACHE_TIME = 1800;
-const COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/";
+const COIN_GECKO_API_URL = "https://api-pro.coingecko.com/api/v3/";
+const COIN_GECKO_API_KEY = process.env.COIN_GECKO_API_KEY;
 const alchemySettings = {
   apiKey: "", // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
@@ -117,7 +118,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         ),
         alchemy.core.getBalance(addresses[0]),
         fetch(
-          `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
+          `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
         ).then(async (response) => await response.json()),
       ]);
 
@@ -155,7 +156,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       (token: TokenBalance) => token.contractAddress
     );
     const tokenUSDPricesResponse = await fetch(
-      `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD`
+      `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
     );
     const tokenUSDPrices = await tokenUSDPricesResponse.json(); // TODO: type it
 

@@ -43,7 +43,8 @@ import { TreasuryToken } from "types/treasury.d";
  */
 
 const CACHE_TIME = 1800;
-const COIN_GECKO_API_URL = "https://api.coingecko.com/api/v3/";
+const COIN_GECKO_API_URL = "https://pro-api.coingecko.com/api/v3/";
+const COIN_GECKO_API_KEY = process.env.COIN_GECKO_API_KEY;
 const alchemySettings = {
   apiKey: "", // Replace with your Alchemy API Key.
   network: Network.ETH_MAINNET, // Replace with your network.
@@ -66,8 +67,18 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     ),
     alchemy.core.getBalance(addresses[0]),
     fetch(
-      `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD`
-    ).then(async (response) => await response.json()),
+      `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
+    ).then(async (response) => await response.json()).catch(async() => {
+      // fallback
+      const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`);
+      const data = JSON.parse(await res.text())
+
+      return {
+        ethereum: {
+          usd: data.USD
+        }
+      };
+    }),
   ]);
 
   let totalBalances: Array<TokenBalance & { parent: string }> = [];
@@ -93,7 +104,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     amount: ethBalanceInNumber,
     logo: "https://token-icons.s3.amazonaws.com/eth.png",
     name: "Ethereum",
-    price: ethereum.usd,
+    price: ethereum.usd || 0,
     symbol: "ETH",
     decimals: ETH_DECIMALS,
     value: ethBalanceInNumber * ethereum.usd,
@@ -103,10 +114,41 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   const tokensAddresses = nonZeroTokenBalances.map(
     (token: TokenBalance) => token.contractAddress
   );
-  const tokenUSDPricesResponse = await fetch(
-    `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD`
-  );
-  const tokenUSDPrices = await tokenUSDPricesResponse.json(); // TODO: type it
+
+  let tokenUSDPrices:Record<string, { usd: number }> = {};
+  try {
+    const tokenUSDPricesResponse = await fetch(
+      `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
+    );
+
+    tokenUSDPrices = await tokenUSDPricesResponse.json() as Record<string, { usd: number }>;
+  } catch {
+    const tokenUSDPricesResponse = await Promise.all(tokensAddresses.map(async (address) => {
+
+      const token = await alchemy.core.getTokenMetadata(address)
+      if (address !== "0xba962a81f78837751be8a177378d582f337084e6" && token.symbol && token.symbol.length < 29 && token.symbol.indexOf(".com") == -1) {
+        const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${token.symbol}&tsyms=USD`);
+        const data = JSON.parse(await res.text())
+
+        return {
+          token: address,
+          price: data.USD
+        }
+      } else {
+        return {
+          token: address,
+          price: 0
+        }
+      }
+    }))
+    tokenUSDPrices = tokenUSDPricesResponse.reduce((tokenUSDPrices, set) => {
+      tokenUSDPrices[set.token] = {
+        usd: set.price
+      };
+
+      return tokenUSDPrices;
+    }, {} as Record<string, { usd: number }>);
+  }
 
   const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
     (token: TokenBalance) => {
@@ -122,12 +164,13 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   );
 
   const metadataSet = await Promise.all(
-    withPriceNonZeroBalances.map((item) =>
+    withPriceNonZeroBalances.map((item) => 
       alchemy.core.getTokenMetadata(item.contractAddress)
     )
   );
 
   let totalValueInUSD = ethToken.value;
+
   const erc20Tokens: Array<TreasuryToken> = [];
   withPriceNonZeroBalances.forEach((item, index) => {
     const balanceInString = item.tokenBalance;
@@ -144,13 +187,13 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       symbol: metadataSet[index].symbol ?? "",
       decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
       logo: metadataSet[index].logo ?? "",
-      price: tokenUSDPrices[item.contractAddress].usd,
-      value: balanceInNumber * tokenUSDPrices[item.contractAddress].usd,
+      price: tokenUSDPrices[item.contractAddress].usd || 0,
+      value: balanceInNumber * (tokenUSDPrices[item.contractAddress].usd || 0),
       perOfHoldings: "%",
     };
 
     erc20Tokens.push(erc20Token);
-    totalValueInUSD += erc20Token.value;
+    totalValueInUSD += erc20Token.value || 0;
   });
 
   const portfolio = [...erc20Tokens, ethToken].map((token) => {
