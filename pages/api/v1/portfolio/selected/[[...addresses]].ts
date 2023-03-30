@@ -7,8 +7,8 @@ import {
   BITDAO_LP_WALLET_ADDRESS,
   BITDAO_TREASURY_ADDRESS,
 } from "config/general";
-import { TreasuryToken } from "types/treasury.d";
 import { getAddress } from "ethers/lib/utils";
+import { TreasuryToken } from "types/treasury.d";
 
 /**
  * @swagger
@@ -50,7 +50,7 @@ import { getAddress } from "ethers/lib/utils";
  *        message: alchemyApi not provided
  */
 const CACHE_TIME = 1800;
-const COIN_GECKO_API_URL = "https://api-pro.coingecko.com/api/v3/";
+const COIN_GECKO_API_URL = "https://pro-api.coingecko.com/api/v3/";
 const COIN_GECKO_API_KEY = process.env.COIN_GECKO_API_KEY;
 const alchemySettings = {
   apiKey: "", // Replace with your Alchemy API Key.
@@ -124,11 +124,18 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     let totalBalances: Array<TokenBalance & { parent: string }> = [];
     for (const item of balancesSet) {
-      totalBalances = [...totalBalances, ...(item.tokenBalances as unknown as Array<TokenBalance & { parent: string }>).map((balance) => {
-        balance.parent = item.address
-        
-        return balance
-      })];
+      totalBalances = [
+        ...totalBalances,
+        ...(
+          item.tokenBalances as unknown as Array<
+            TokenBalance & { parent: string }
+          >
+        ).map((balance) => {
+          balance.parent = item.address;
+
+          return balance;
+        }),
+      ];
     }
     const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
       return token.tokenBalance !== HashZero;
