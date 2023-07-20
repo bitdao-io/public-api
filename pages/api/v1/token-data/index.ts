@@ -13,7 +13,7 @@ import {
   MANTLE_TREASURY_ADDRESS,
   TOKEN_CONTRACT_ADDRESS,
 } from "config/general";
-import { createPublicClient, formatUnits, http, parseAbi } from "viem";
+import { createPublicClient, formatUnits, http } from "viem";
 import { mainnet } from "viem/chains";
 
 /**
@@ -65,7 +65,19 @@ const getTotalSupply = async (alchemy?: Alchemy) => {
     ),
   });
 
-  const abi = "function totalSupply() view returns (uint256)";
+  // const abi = parseAbi([
+  //   "function totalSupply() view returns (uint256)",
+  // ] ) ;
+
+  const abi = <const>[
+    {
+      name: "totalSupply",
+      type: "function",
+      stateMutability: "view",
+      inputs: [],
+      outputs: [{ type: "uint256" }],
+    },
+  ];
   // [
   //   {address:TOKEN_CONTRACT_ADDRESS}
   // ];
@@ -73,8 +85,8 @@ const getTotalSupply = async (alchemy?: Alchemy) => {
   // const erc20 = new Contract(TOKEN_CONTRACT_ADDRESS, abi, provider);
   const erc20 = await client.readContract({
     address: TOKEN_CONTRACT_ADDRESS,
-    abi: parseAbi([abi]),
     functionName: "totalSupply",
+    abi: abi,
   });
 
   return formatUnits(erc20, 18).toString();

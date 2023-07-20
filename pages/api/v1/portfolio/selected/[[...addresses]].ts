@@ -62,7 +62,7 @@ const ETH_DECIMALS = 18;
 
 // @TODO - use token address here instead of token name
 const SELECTION = [
-  "BitDAO",
+  // "BitDAO",
   "Mantle",
   "USD Coin",
   "Tether",

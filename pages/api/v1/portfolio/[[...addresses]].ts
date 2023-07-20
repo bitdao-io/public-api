@@ -195,32 +195,36 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
 
   const erc20Tokens: Array<TreasuryToken> = [];
   withPriceNonZeroBalances.forEach((item, index) => {
-    const balanceInString = item.tokenBalance;
+    // dirty filter out bitdao for now
+    if (metadataSet[index]?.name !== "BitDAO") {
+      const balanceInString = item.tokenBalance;
 
-    const balanceInNumber = balanceInString
-      ? Number(
-          formatUnits(
-            BigInt(balanceInString),
-            metadataSet[index].decimals || 18
+      const balanceInNumber = balanceInString
+        ? Number(
+            formatUnits(
+              BigInt(balanceInString),
+              metadataSet[index].decimals || 18
+            )
           )
-        )
-      : 0;
+        : 0;
 
-    const erc20Token: TreasuryToken = {
-      address: getAddress(item.contractAddress),
-      parent: getAddress(item.parent),
-      amount: balanceInNumber,
-      name: metadataSet[index].name ?? "",
-      symbol: metadataSet[index].symbol ?? "",
-      decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
-      logo: metadataSet[index].logo ?? "",
-      price: tokenUSDPrices[item.contractAddress].usd || 0,
-      value: balanceInNumber * (tokenUSDPrices[item.contractAddress].usd || 0),
-      perOfHoldings: "%",
-    };
+      const erc20Token: TreasuryToken = {
+        address: getAddress(item.contractAddress),
+        parent: getAddress(item.parent),
+        amount: balanceInNumber,
+        name: metadataSet[index].name ?? "",
+        symbol: metadataSet[index].symbol ?? "",
+        decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
+        logo: metadataSet[index].logo ?? "",
+        price: tokenUSDPrices[item.contractAddress].usd || 0,
+        value:
+          balanceInNumber * (tokenUSDPrices[item.contractAddress].usd || 0),
+        perOfHoldings: "%",
+      };
 
-    erc20Tokens.push(erc20Token);
-    totalValueInUSD += erc20Token.value || 0;
+      erc20Tokens.push(erc20Token);
+      totalValueInUSD += erc20Token.value || 0;
+    }
   });
 
   const portfolio = [...erc20Tokens, ethToken].map((token) => {
