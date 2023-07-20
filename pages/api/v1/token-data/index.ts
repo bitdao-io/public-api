@@ -53,12 +53,16 @@ const alchemySettings = {
 };
 
 // get the total supply by reasing the contract state
-const getTotalSupply = async (alchemy: Alchemy) => {
+const getTotalSupply = async (alchemy?: Alchemy) => {
   // Example reading from a contract directly...
   // const provider = await alchemy.config.getProvider();
   const client = createPublicClient({
     chain: mainnet,
-    transport: http(),
+    transport: http(
+      `https://eth-mainnet.g.alchemy.com/v2/${
+        alchemy?.config.apiKey || process.env.ALCHEMY_API_KEY
+      }`
+    ),
   });
 
   const abi = "function totalSupply() view returns (uint256)";
