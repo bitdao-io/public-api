@@ -52,7 +52,7 @@ const ETH_DECIMALS = 18;
 //     - https://docs.alchemy.com/docs/how-to-get-all-tokens-owned-by-an-address
 export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   alchemySettings.apiKey = String(alchemyApi);
-
+  console.log(addresses);
   const alchemy = new Alchemy(alchemySettings);
 
   const [balancesSet, ethBalanceInBigNumber, { ethereum }] = await Promise.all([
@@ -159,13 +159,16 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
         }
       })
     );
-    tokenUSDPrices = tokenUSDPricesResponse.reduce((tokenUSDPrices, set) => {
-      tokenUSDPrices[set.token] = {
-        usd: set.price,
-      };
+    tokenUSDPrices = tokenUSDPricesResponse.reduce(
+      (tokenUSDPrices, set) => {
+        tokenUSDPrices[set.token] = {
+          usd: set.price,
+        };
 
-      return tokenUSDPrices;
-    }, {} as Record<string, { usd: number }>);
+        return tokenUSDPrices;
+      },
+      {} as Record<string, { usd: number }>
+    );
   }
 
   const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
@@ -263,7 +266,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     let addresses = undefined;
     if (req.query.addresses) {
-      addresses = (req.query.addresses[0] as string).split(",");
+      addresses = (req.query.addresses as string).split(",");
     } else {
       // addresses = [MANTLE_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
       addresses = [MANTLE_TREASURY_ADDRESS];
