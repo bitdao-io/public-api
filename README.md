@@ -1,6 +1,6 @@
 # Public API
 
-https://api-public.bitdao.io
+https://api.mantle.xyz
 
 ## Getting the project up and running
 

@@ -1,7 +1,7 @@
-const BITDAO_CONTRACT_ADDRESS = "0x1A4b46696b2bB4794Eb3D4c26f1c55F9170fa4C5";
-const BITDAO_BURN_ADDRESS = "0x000000000000000000000000000000000000dead";
-const BITDAO_TREASURY_ADDRESS = "0x78605Df79524164911C144801f41e9811B7DB73D";
+const TOKEN_CONTRACT_ADDRESS = "0x3c3a81e81dc49a522a592e7622a7e711c06bf354";
+const MANTLE_TREASURY_ADDRESS = "0x78605Df79524164911C144801f41e9811B7DB73D";
 const BITDAO_LP_WALLET_ADDRESS = "0x5C128d25A21f681e678cB050E551A895c9309945";
+const MANTLE_CORE_WALLET_ADDRESS = "0x1B9Cef6Bdd029f378c511E5e6C20eE556b6781b9";
 
 const BASE_API = process.env.NEXT_PUBLIC_VERCEL_URL
   ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
@@ -16,13 +16,13 @@ const SWAGGER_DESCRIPTION = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Bitdao Public API",
+      title: "Mantle Public API",
       version: "0.1.0",
       contact: {
-        email: "octavio.amu@windranger.io",
-        name: "Windranger Developers",
-        url: "https://windranger.io/",
-        "x-twitter": "WindrangerLabs",
+        email: "octavio.amu@mantle.xyz, grezle@mantle.xyz",
+        name: "Mantle Developers",
+        url: "https://mantle.xyz/",
+        "x-twitter": "0xmantle",
       },
       description: description,
 
@@ -31,7 +31,7 @@ const SWAGGER_DESCRIPTION = {
         url: "https://opensource.org/licenses/MIT",
       },
       "x-logo": {
-        url: "bitdao.png",
+        url: "logo.png",
       },
       externalDocs: {
         description: "GitHub v3 REST API",
@@ -39,10 +39,10 @@ const SWAGGER_DESCRIPTION = {
       },
     },
     servers: [
-      { url: "https://api-public.bitdao.io/api/v1", description: "Production" },
+      { url: "https://api.mantle.xyz/api/v1", description: "Production" },
       { url: `${BASE_API}/api/v1`, description: "Preview" },
       {
-        url: "https://public-api-git-develop-windranger.vercel.app/api/v1",
+        url: "https://api-git-develop-mantle-xyz.vercel.app/api/v1",
         description: "Development",
       },
     ],
@@ -67,11 +67,11 @@ const BITDAO_LOCKED_ADDRESSES = [
 const USDT_CONTRACT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 
 export {
-  BITDAO_CONTRACT_ADDRESS,
-  BITDAO_BURN_ADDRESS,
-  BITDAO_TREASURY_ADDRESS,
-  BITDAO_LP_WALLET_ADDRESS,
-  SWAGGER_DESCRIPTION,
   BITDAO_LOCKED_ADDRESSES,
+  BITDAO_LP_WALLET_ADDRESS,
+  MANTLE_CORE_WALLET_ADDRESS,
+  MANTLE_TREASURY_ADDRESS,
+  SWAGGER_DESCRIPTION,
+  TOKEN_CONTRACT_ADDRESS,
   USDT_CONTRACT_ADDRESS,
 };

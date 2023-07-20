@@ -1,9 +1,5 @@
 {
-  "cSpell.words": [
-    "BITDAO",
-    "ethersproject",
-    "maxage"
-  ],
+  "cSpell.words": ["BITDAO", "MANTLE", "ethersproject", "maxage"],
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true
 }

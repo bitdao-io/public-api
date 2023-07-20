@@ -1,13 +1,12 @@
-import { HashZero } from "@ethersproject/constants";
-import { formatUnits } from "@ethersproject/units";
 import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
+import { formatUnits, getAddress } from "viem";
 
 import {
   BITDAO_LP_WALLET_ADDRESS,
-  BITDAO_TREASURY_ADDRESS,
+  MANTLE_TREASURY_ADDRESS,
 } from "config/general";
-import { getAddress } from "ethers/lib/utils";
+
 import { TreasuryToken } from "types/treasury.d";
 
 /**
@@ -20,6 +19,7 @@ import { TreasuryToken } from "types/treasury.d";
  *    description: |-
  *      **Returns balances only from selected tokens**
  *      - 'BitDAO'
+ *      - 'Mantle'
  *      - 'USD Coin',
  *      - 'Tether',
  *      - 'Univ3 LP BIT',
@@ -49,6 +49,8 @@ import { TreasuryToken } from "types/treasury.d";
  *        statusCode: 500
  *        message: alchemyApi not provided
  */
+const HashZero =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
 const CACHE_TIME = 1800;
 const COIN_GECKO_API_URL = "https://pro-api.coingecko.com/api/v3/";
 const COIN_GECKO_API_KEY = process.env.COIN_GECKO_API_KEY;
@@ -61,6 +63,7 @@ const ETH_DECIMALS = 18;
 // @TODO - use token address here instead of token name
 const SELECTION = [
   "BitDAO",
+  "Mantle",
   "USD Coin",
   "Tether",
   "Univ3 LP BIT",
@@ -89,7 +92,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.query.addresses) {
       addresses = (req.query.addresses[0] as string).split(",");
     } else {
-      addresses = [BITDAO_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
+      addresses = [MANTLE_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
     }
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -143,7 +146,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
     const ethBalanceInNumber = Number(
-      formatUnits(ethBalanceInBigNumber, ETH_DECIMALS)
+      formatUnits(BigInt(ethBalanceInBigNumber.toString()), ETH_DECIMALS)
     );
 
     const ethToken: TreasuryToken = {
@@ -191,7 +194,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
         const balanceInNumber = balanceInString
           ? Number(
-              formatUnits(balanceInString, metadataSet[index].decimals || 18)
+              formatUnits(
+                BigInt(balanceInString),
+                metadataSet[index].decimals || 18
+              )
             )
           : 0;
 

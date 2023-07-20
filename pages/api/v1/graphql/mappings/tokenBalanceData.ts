@@ -1,11 +1,11 @@
-// Bind ID against the BITDAO_CONTRACT_ADDRESS
-import { BITDAO_CONTRACT_ADDRESS } from "@/config/general";
+// Bind ID against the TOKEN_CONTRACT_ADDRESS
+import { TOKEN_CONTRACT_ADDRESS } from "@/config/general";
 
 // Alchemy has already typed the token balances
 import { TokenBalancesResponse } from "alchemy-sdk";
 
 // Map data exposed in this endpoint to graphql entities
-import { dataHandler as TokenBalance } from "../../token-balances";
+import { dataHandler as TokenBalance } from "../../token-data";
 
 // simple holders type (shouldnt need this anywhere else)
 type Holders = {
@@ -62,16 +62,16 @@ export const mapTokenBalanceData = async (tokens: { address: string }[]) => {
     // construct new tokenBalances data
     const tokenBalances = [
       {
-        id: BITDAO_CONTRACT_ADDRESS,
-        name: "bit",
-        token: BITDAO_CONTRACT_ADDRESS,
-        address: BITDAO_CONTRACT_ADDRESS,
-        totalSupply: _tokenBalances.bitTotalSupply,
-        circulatingSupply: _tokenBalances.bitCirculatingSupply,
-        lockedTotal: _tokenBalances.bitLockedTotal,
-        burnedTotal: _tokenBalances.bitBurnedTotal,
-        balanceTotal: _tokenBalances.bitBalanceTotal,
-        LPTokenTotal: _tokenBalances.bitLPTokenTotal,
+        id: TOKEN_CONTRACT_ADDRESS,
+        name: "MNT",
+        token: TOKEN_CONTRACT_ADDRESS,
+        address: TOKEN_CONTRACT_ADDRESS,
+        totalSupply: _tokenBalances.totalSupply,
+        circulatingSupply: _tokenBalances.circulatingSupply,
+        lockedTotal: _tokenBalances.lockedTotal,
+        balanceTotal: _tokenBalances.treasuryBalanceTotal,
+        LPTokenTotal: _tokenBalances.treasuryLPTokenTotal,
+        mantleCoreTotal: _tokenBalances.mantleCoreTotal,
       },
     ];
 
@@ -79,20 +79,20 @@ export const mapTokenBalanceData = async (tokens: { address: string }[]) => {
     [
       {
         name: "BalancesData",
-        data: _tokenBalances.bitBalancesData,
+        data: _tokenBalances.treasuryBalanceData,
       },
       {
-        name: "BurnedBalancesData",
-        data: _tokenBalances.bitBurnedBalancesData,
+        name: "mantleCoreData",
+        data: _tokenBalances.mantleCoreData,
       },
       {
         name: "LPTokenBalancesData",
-        data: _tokenBalances.bitLPTokenBalancesData,
+        data: _tokenBalances.treasuryLPBalanceData,
       },
     ].map(({ name, data }) => updateHoldersEntry(holders, name, data));
 
     // apply the same to the locked balanceData (these all share a name but not an address)
-    _tokenBalances.bitLockedBalancesData.map((data) =>
+    _tokenBalances.lockedBalancesData.map((data) =>
       updateHoldersEntry(holders, `LockedBalanceData-${data.address}`, data)
     );
     // return the mapped entities
@@ -102,7 +102,6 @@ export const mapTokenBalanceData = async (tokens: { address: string }[]) => {
       tokenBalances,
     };
   } catch {
-
     // return empty mapping
     return {
       tokens,
@@ -110,5 +109,4 @@ export const mapTokenBalanceData = async (tokens: { address: string }[]) => {
       tokenBalances: [],
     };
   }
-
 };

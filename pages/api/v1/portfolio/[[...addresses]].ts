@@ -1,14 +1,9 @@
-import { HashZero } from "@ethersproject/constants";
-import { formatUnits } from "@ethersproject/units";
+import { formatUnits, getAddress } from "viem";
+
 import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
-import { getAddress } from "ethers/lib/utils";
-
-import {
-  BITDAO_LP_WALLET_ADDRESS,
-  BITDAO_TREASURY_ADDRESS,
-} from "config/general";
+import { MANTLE_TREASURY_ADDRESS } from "config/general";
 import { TreasuryToken } from "types/treasury.d";
 
 /**
@@ -41,7 +36,8 @@ import { TreasuryToken } from "types/treasury.d";
  *        statusCode: 500
  *        message: alchemyApi not provided
  */
-
+const HashZero =
+  "0x0000000000000000000000000000000000000000000000000000000000000000";
 const CACHE_TIME = 1800;
 const COIN_GECKO_API_URL = "https://pro-api.coingecko.com/api/v3/";
 const COIN_GECKO_API_KEY = process.env.COIN_GECKO_API_KEY;
@@ -68,26 +64,37 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     alchemy.core.getBalance(addresses[0]),
     fetch(
       `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
-    ).then(async (response) => await response.json()).catch(async() => {
-      // fallback
-      const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`);
-      const data = JSON.parse(await res.text())
+    )
+      .then(async (response) => await response.json())
+      .catch(async () => {
+        // fallback
+        const res = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`
+        );
+        const data = JSON.parse(await res.text());
 
-      return {
-        ethereum: {
-          usd: data.USD
-        }
-      };
-    }),
+        return {
+          ethereum: {
+            usd: data.USD,
+          },
+        };
+      }),
   ]);
 
   let totalBalances: Array<TokenBalance & { parent: string }> = [];
   for (const item of balancesSet) {
-    totalBalances = [...totalBalances, ...(item.tokenBalances as unknown as Array<TokenBalance & { parent: string }>).map((balance) => {
-      balance.parent = item.address
-      
-      return balance
-    })];
+    totalBalances = [
+      ...totalBalances,
+      ...(
+        item.tokenBalances as unknown as Array<
+          TokenBalance & { parent: string }
+        >
+      ).map((balance) => {
+        balance.parent = item.address;
+
+        return balance;
+      }),
+    ];
   }
   const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
     return token.tokenBalance !== HashZero;
@@ -95,7 +102,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
 
   // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
   const ethBalanceInNumber = Number(
-    formatUnits(ethBalanceInBigNumber, ETH_DECIMALS)
+    formatUnits(BigInt(ethBalanceInBigNumber.toString()), ETH_DECIMALS)
   );
 
   const ethToken: TreasuryToken = {
@@ -115,35 +122,46 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     (token: TokenBalance) => token.contractAddress
   );
 
-  let tokenUSDPrices:Record<string, { usd: number }> = {};
+  let tokenUSDPrices: Record<string, { usd: number }> = {};
   try {
     const tokenUSDPricesResponse = await fetch(
       `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
     );
 
-    tokenUSDPrices = await tokenUSDPricesResponse.json() as Record<string, { usd: number }>;
+    tokenUSDPrices = (await tokenUSDPricesResponse.json()) as Record<
+      string,
+      { usd: number }
+    >;
   } catch {
-    const tokenUSDPricesResponse = await Promise.all(tokensAddresses.map(async (address) => {
+    const tokenUSDPricesResponse = await Promise.all(
+      tokensAddresses.map(async (address) => {
+        const token = await alchemy.core.getTokenMetadata(address);
+        if (
+          address !== "0xba962a81f78837751be8a177378d582f337084e6" &&
+          token.symbol &&
+          token.symbol.length < 29 &&
+          token.symbol.indexOf(".com") == -1
+        ) {
+          const res = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=${token.symbol}&tsyms=USD`
+          );
+          const data = JSON.parse(await res.text());
 
-      const token = await alchemy.core.getTokenMetadata(address)
-      if (address !== "0xba962a81f78837751be8a177378d582f337084e6" && token.symbol && token.symbol.length < 29 && token.symbol.indexOf(".com") == -1) {
-        const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${token.symbol}&tsyms=USD`);
-        const data = JSON.parse(await res.text())
-
-        return {
-          token: address,
-          price: data.USD
+          return {
+            token: address,
+            price: data.USD,
+          };
+        } else {
+          return {
+            token: address,
+            price: 0,
+          };
         }
-      } else {
-        return {
-          token: address,
-          price: 0
-        }
-      }
-    }))
+      })
+    );
     tokenUSDPrices = tokenUSDPricesResponse.reduce((tokenUSDPrices, set) => {
       tokenUSDPrices[set.token] = {
-        usd: set.price
+        usd: set.price,
       };
 
       return tokenUSDPrices;
@@ -153,10 +171,14 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
     (token: TokenBalance) => {
       // price could be missing for peeps -- add it back in here if absent...
-      if (token.contractAddress === "0xba962a81f78837751be8a177378d582f337084e6") {
-        tokenUSDPrices[token.contractAddress] = tokenUSDPrices[token.contractAddress] || {
-          usd: 650
-        }
+      if (
+        token.contractAddress === "0xba962a81f78837751be8a177378d582f337084e6"
+      ) {
+        tokenUSDPrices[token.contractAddress] = tokenUSDPrices[
+          token.contractAddress
+        ] || {
+          usd: 650,
+        };
       }
 
       return tokenUSDPrices[token.contractAddress]?.usd;
@@ -164,7 +186,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   );
 
   const metadataSet = await Promise.all(
-    withPriceNonZeroBalances.map((item) => 
+    withPriceNonZeroBalances.map((item) =>
       alchemy.core.getTokenMetadata(item.contractAddress)
     )
   );
@@ -176,7 +198,12 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     const balanceInString = item.tokenBalance;
 
     const balanceInNumber = balanceInString
-      ? Number(formatUnits(balanceInString, metadataSet[index].decimals || 18))
+      ? Number(
+          formatUnits(
+            BigInt(balanceInString),
+            metadataSet[index].decimals || 18
+          )
+        )
       : 0;
 
     const erc20Token: TreasuryToken = {
@@ -234,7 +261,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     if (req.query.addresses) {
       addresses = (req.query.addresses[0] as string).split(",");
     } else {
-      addresses = [BITDAO_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
+      // addresses = [MANTLE_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
+      addresses = [MANTLE_TREASURY_ADDRESS];
     }
 
     // get the result from dataHandler
