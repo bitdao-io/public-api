@@ -9,10 +9,7 @@ import { mapPortfolioData } from "./mappings/portfolioData";
 import { mapTokenBalanceData } from "./mappings/tokenBalanceData";
 
 // We define these two tokens manually so that they're present for buyback joins incase the other mapped data doesn't include them
-import {
-  TOKEN_CONTRACT_ADDRESS,
-  USDT_CONTRACT_ADDRESS,
-} from "@/config/general";
+import { USDT_CONTRACT_ADDRESS } from "@/config/general";
 
 // Export a new handler at the requested graphqlEndpoint (this should match the api path)
 export default createSubgraph<NextApiRequest, NextApiResponse>({
@@ -78,14 +75,14 @@ export default createSubgraph<NextApiRequest, NextApiResponse>({
   entities: async () => {
     // define usdt and bit manually for buyback joins
     const tokens = [
-      {
-        id: TOKEN_CONTRACT_ADDRESS,
-        address: TOKEN_CONTRACT_ADDRESS,
-        symbol: "MNT",
-        name: "Mantle",
-        decimals: 18,
-        logo: "https://w3s.link/ipfs/bafybeiejli4rjcqvjsld4wprhylfa6uvhta5vhivauh3bc6x56hracob3i/token-logo.png",
-      },
+      // {
+      //   id: TOKEN_CONTRACT_ADDRESS,
+      //   address: TOKEN_CONTRACT_ADDRESS,
+      //   symbol: "MNT",
+      //   name: "Mantle",
+      //   decimals: 18,
+      //   logo: "https://w3s.link/ipfs/bafybeiejli4rjcqvjsld4wprhylfa6uvhta5vhivauh3bc6x56hracob3i/token-logo.png",
+      // },
       {
         id: USDT_CONTRACT_ADDRESS,
         address: USDT_CONTRACT_ADDRESS,

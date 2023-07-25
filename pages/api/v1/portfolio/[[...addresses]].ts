@@ -4,6 +4,7 @@ import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
 import { MANTLE_TREASURY_ADDRESS } from "config/general";
+import { request } from "graphql-request";
 import { TreasuryToken } from "types/treasury.d";
 
 /**
@@ -47,41 +48,120 @@ const alchemySettings = {
 };
 const ETH_DECIMALS = 18;
 
+const queryLP = `
+query QueryLP($address:Bytes!) {
+  positions(where: {owner: $address}) {
+    id
+    pool {
+      id
+      totalValueLockedETH
+      totalValueLockedToken0
+      totalValueLockedToken1
+      totalValueLockedUSD
+    }
+    owner
+    depositedToken0
+    depositedToken1
+    token1 {
+      decimals
+      symbol
+      id
+      name
+    }
+    token0 {
+      decimals
+      id
+      name
+      symbol
+    }
+  }
+}`;
+
+export interface Positions {
+  positions: {
+    token0: { id: string };
+    token1: { id: string };
+    pool: { totalValueLockedToken0: string; totalValueLockedToken1: string };
+  }[];
+}
+
+const UNISWAP_SUBGRAPH = process.env.NEXT_PUBLIC_UNISWAP_SUBGRAPH;
+const getUniswapLP = async (address: string) => {
+  const variables = {
+    address: address,
+  };
+  try {
+    const data: Positions = await request(
+      UNISWAP_SUBGRAPH as string,
+      queryLP,
+      variables
+    );
+    const dataTokens = data.positions[0] as {
+      token0: { id: string };
+      token1: { id: string };
+      pool: { totalValueLockedToken0: string; totalValueLockedToken1: string };
+    };
+    const formatedData: Array<TokenBalance & { isLP: boolean }> = [
+      {
+        contractAddress: dataTokens.token0.id,
+        tokenBalance: dataTokens.pool.totalValueLockedToken0,
+        error: null,
+        isLP: true,
+      },
+      {
+        contractAddress: dataTokens.token1.id,
+        tokenBalance: dataTokens.pool.totalValueLockedToken1,
+        error: null,
+        isLP: true,
+      },
+    ];
+    return formatedData;
+  } catch (error) {
+    return { contractAddress: "string", tokenBalance: null, error: error };
+  }
+};
+
 // Get the results using the alchemyApi key provided
 // RE: - https://docs.alchemy.com/reference/sdk-gettokenbalances
 //     - https://docs.alchemy.com/docs/how-to-get-all-tokens-owned-by-an-address
 export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   alchemySettings.apiKey = String(alchemyApi);
-  console.log(addresses);
   const alchemy = new Alchemy(alchemySettings);
 
-  const [balancesSet, ethBalanceInBigNumber, { ethereum }] = await Promise.all([
-    Promise.all(
-      addresses.map(async (item) => {
-        return await alchemy.core.getTokenBalances(item);
-      })
-    ),
-    alchemy.core.getBalance(addresses[0]),
-    fetch(
-      `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
-    )
-      .then(async (response) => await response.json())
-      .catch(async () => {
-        // fallback
-        const res = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`
-        );
-        const data = JSON.parse(await res.text());
+  const [balancesSet, balancesLP, ethBalanceInBigNumber, { ethereum }] =
+    await Promise.all([
+      Promise.all(
+        addresses.map(async (item) => {
+          return alchemy.core.getTokenBalances(item);
+        })
+      ),
+      getUniswapLP(addresses[0]),
 
-        return {
-          ethereum: {
-            usd: data.USD,
-          },
-        };
-      }),
-  ]);
+      alchemy.core.getBalance(addresses[0]),
+      fetch(
+        `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
+      )
+        .then(async (response) => await response.json())
+        .catch(async () => {
+          // fallback
+          const res = await fetch(
+            `https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`
+          );
+          const data = JSON.parse(await res.text());
 
-  let totalBalances: Array<TokenBalance & { parent: string }> = [];
+          return {
+            ethereum: {
+              usd: data.USD,
+            },
+          };
+        }),
+    ]);
+
+  let totalBalances: Array<TokenBalance & { parent: string; isLP?: boolean }> =
+    [];
+
+  balancesSet[0].tokenBalances.push(...(balancesLP as Array<TokenBalance>));
+
   for (const item of balancesSet) {
     totalBalances = [
       ...totalBalances,
@@ -96,6 +176,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       }),
     ];
   }
+
   const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
     return token.tokenBalance !== HashZero;
   });
@@ -203,22 +284,28 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       const balanceInString = item.tokenBalance;
 
       const balanceInNumber = balanceInString
-        ? Number(
-            formatUnits(
-              BigInt(balanceInString),
-              metadataSet[index].decimals || 18
+        ? balanceInString.startsWith("0x")
+          ? Number(
+              formatUnits(
+                BigInt(balanceInString),
+                metadataSet[index].decimals || 18
+              )
             )
-          )
+          : Number(balanceInString)
         : 0;
 
       const erc20Token: TreasuryToken = {
         address: getAddress(item.contractAddress),
         parent: getAddress(item.parent),
         amount: balanceInNumber,
-        name: metadataSet[index].name ?? "",
+        name: `${item.isLP ? "UniV3LP " : ""}${metadataSet[index].name}` ?? "",
         symbol: metadataSet[index].symbol ?? "",
         decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
-        logo: metadataSet[index].logo ?? "",
+        logo: metadataSet[index].logo?.length
+          ? (metadataSet[index].logo as string)
+          : metadataSet[index].symbol === "MNT"
+          ? "https://w3s.link/ipfs/bafybeiejli4rjcqvjsld4wprhylfa6uvhta5vhivauh3bc6x56hracob3i/token-logo.png"
+          : "",
         price: tokenUSDPrices[item.contractAddress].usd || 0,
         value:
           balanceInNumber * (tokenUSDPrices[item.contractAddress].usd || 0),

@@ -36,14 +36,15 @@ export const mapPortfolioData = async (tokens: { address: string }[]) => {
     const portfolioBalances = _portfolioBalances.portfolio.map(
       (balance, key) => {
         // if this is an LP balance then we should make a new token to show it as such
-        const tokenAddress =
-          balance.parent === BITDAO_LP_WALLET_ADDRESS
-            ? balance.parent + "-" + balance.address
-            : balance.address;
+        const tokenAddress = `${balance.address}-${key}`;
+        // balance.parent === BITDAO_LP_WALLET_ADDRESS
+        //   ? balance.parent + "-" + balance.address
+        //   : balance.address;
         // record the token if its not in the tokens list
-        const tokenIndex = tokens.findIndex((token) => {
-          return token.address === tokenAddress;
-        });
+        // const tokenIndex = tokens.findIndex((token) => {
+        //   return token.address === tokenAddress;
+        // });
+
         const token = {
           id: tokenAddress,
           address: balance.address,
@@ -54,11 +55,11 @@ export const mapPortfolioData = async (tokens: { address: string }[]) => {
           decimals: balance.decimals,
           logo: balance.logo,
         };
-        if (tokenIndex === -1) {
-          tokens.push(token);
-        } else {
-          tokens.splice(tokenIndex, 1, token);
-        }
+        tokens.push(token);
+        // if (tokenIndex === -1) {
+        // } else {
+        //   tokens.splice(tokenIndex, 1, token);
+        // }
 
         // conforms to schema
         return {
