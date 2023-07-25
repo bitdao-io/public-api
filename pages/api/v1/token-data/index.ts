@@ -209,6 +209,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
         message: "alchemyApi not provided",
       });
     }
+    const query = req.query.q;
+    console.log("query", req.query.q);
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader(
@@ -230,6 +232,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       "Cache-Control",
       `s-maxage=${CACHE_TIME}, stale-while-revalidate=${2 * CACHE_TIME}`
     );
+
+    if (query) {
+      const dataFilter = results[query as keyof typeof results];
+      const result:
+        | string
+        | number
+        | TokenBalancesResponse
+        | TokenBalancesResponse[] =
+        dataFilter && typeof dataFilter === "string"
+          ? Number(dataFilter)
+          : dataFilter;
+      console.log("result", result);
+      if (result) return res.json(result);
+    }
     res.json({
       success: true,
       statusCode: 200,
