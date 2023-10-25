@@ -1,5 +1,5 @@
 interface TreasuryToken {
-  address: string;
+  address: string | `0x${string}`;
   amount: number;
   decimals: number;
   logo: string;

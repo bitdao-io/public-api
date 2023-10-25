@@ -3,7 +3,12 @@ import { formatUnits, getAddress } from "viem";
 import { Alchemy, Network, TokenBalance } from "alchemy-sdk";
 import { NextApiRequest, NextApiResponse } from "next";
 
-import { MANTLE_TREASURY_ADDRESS } from "config/general";
+import { fetchBalances } from "@/utils/getBalances";
+import { getTokenList } from "@/utils/tokenList";
+import {
+  MANTLE_L2_TREASURY_ADDRESS,
+  MANTLE_TREASURY_ADDRESS,
+} from "config/general";
 import { request } from "graphql-request";
 import { TreasuryToken } from "types/treasury.d";
 
@@ -121,6 +126,29 @@ const getUniswapLP = async (address: string) => {
   }
 };
 
+const getL2Tokens = async () => {
+  // get list of L2 mantle tokens
+  const { l2Tokens } = await getTokenList();
+  // fetch L2 balances
+  return fetchBalances(MANTLE_L2_TREASURY_ADDRESS, l2Tokens);
+};
+
+// remove duplicates symbols and sum their amounts
+const reduceTokens = (data: TreasuryToken[]): TreasuryToken[] => {
+  return Object.values(
+    data.reduce<Record<string, TreasuryToken>>((acc, el) => {
+      const uniqueKey = el.symbol;
+
+      if (!acc[uniqueKey]) {
+        acc[uniqueKey] = el;
+      } else {
+        acc[uniqueKey].amount += el.amount;
+        acc[uniqueKey].value += el.value;
+      }
+      return acc;
+    }, {})
+  );
+};
 // Get the results using the alchemyApi key provided
 // RE: - https://docs.alchemy.com/reference/sdk-gettokenbalances
 //     - https://docs.alchemy.com/docs/how-to-get-all-tokens-owned-by-an-address
@@ -128,39 +156,54 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
   alchemySettings.apiKey = String(alchemyApi);
   const alchemy = new Alchemy(alchemySettings);
 
-  const [balancesSet, balancesLP, ethBalanceInBigNumber, { ethereum }] =
-    await Promise.all([
-      Promise.all(
-        addresses.map(async (item) => {
-          return alchemy.core.getTokenBalances(item);
-        })
-      ),
-      getUniswapLP(addresses[0]),
+  const [
+    balancesSet,
+    balancesLP,
+    balancesSetL2,
+    ethBalanceInBigNumber,
+    { ethereum },
+  ] = await Promise.all([
+    // get token balances of every address as balancesSet
+    Promise.all(
+      addresses.map(async (item) => {
+        return alchemy.core.getTokenBalances(item);
+      })
+    ),
+    // get LP positions from uniswap subgraph as balancesLP
+    getUniswapLP(addresses[0]),
+    // get L2 tokens balances as balancesSetL2
+    getL2Tokens(),
+    // get eth balance as ethBalanceInBigNumber
+    alchemy.core.getBalance(addresses[0]),
+    // get current ETH price in USD as ethereum
+    fetch(
+      `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
+    )
+      .then(async (response) => await response.json())
+      .catch(async () => {
+        // fallback
+        const res = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`
+        );
+        const data = JSON.parse(await res.text());
 
-      alchemy.core.getBalance(addresses[0]),
-      fetch(
-        `${COIN_GECKO_API_URL}simple/price?ids=ethereum&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
-      )
-        .then(async (response) => await response.json())
-        .catch(async () => {
-          // fallback
-          const res = await fetch(
-            `https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=USD`
-          );
-          const data = JSON.parse(await res.text());
-
-          return {
-            ethereum: {
-              usd: data.USD,
-            },
-          };
-        }),
-    ]);
+        return {
+          ethereum: {
+            usd: data.USD,
+          },
+        };
+      }),
+  ]);
 
   let totalBalances: Array<TokenBalance & { parent: string; isLP?: boolean }> =
     [];
 
-  balancesSet[0].tokenBalances.push(...(balancesLP as Array<TokenBalance>));
+  balancesSet[0].tokenBalances.push(
+    ...[
+      ...(balancesLP as Array<TokenBalance>),
+      ...(balancesSetL2 as Array<TokenBalance>),
+    ]
+  );
 
   for (const item of balancesSet) {
     totalBalances = [
@@ -176,16 +219,25 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       }),
     ];
   }
-
+  // remove tokens with zero hashes (no balance in hex)
   const nonZeroTokenBalances = totalBalances.filter((token: TokenBalance) => {
     return token.tokenBalance !== HashZero;
   });
 
   // RE: https://docs.ethers.io/v5/api/utils/bignumber/#BigNumber--notes-safenumbers
-  const ethBalanceInNumber = Number(
-    formatUnits(BigInt(ethBalanceInBigNumber.toString()), ETH_DECIMALS)
-  );
+  // need to sum eth on L1 and L2 as eth will have not metadata as not an erc20
+  const ethL2 = balancesSetL2.find((token) => {
+    return (
+      token.contractAddress === "0x0000000000000000000000000000000000000000"
+    );
+  });
+  // sum L1 and L2 eth
+  const ethBalanceInNumber =
+    Number(
+      formatUnits(BigInt(ethBalanceInBigNumber.toString()), ETH_DECIMALS)
+    ) + Number(formatUnits(BigInt(ethL2?.tokenBalance || "0"), ETH_DECIMALS));
 
+  // setup api metadata for eth by default
   const ethToken: TreasuryToken = {
     address: "eth",
     parent: getAddress(addresses[0]),
@@ -198,12 +250,13 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     value: ethBalanceInNumber * ethereum.usd,
     perOfHoldings: "%",
   };
-
+  // create a array of strings for bulk call
   const tokensAddresses = nonZeroTokenBalances.map(
     (token: TokenBalance) => token.contractAddress
   );
-
+  // bulk fetch usd quotes for every token
   let tokenUSDPrices: Record<string, { usd: number }> = {};
+  // try first with the paid coingecko account
   try {
     const tokenUSDPricesResponse = await fetch(
       `${COIN_GECKO_API_URL}simple/token_price/ethereum?contract_addresses=${tokensAddresses.toString()}&vs_currencies=USD&x_cg_pro_api_key=${COIN_GECKO_API_KEY}`
@@ -213,10 +266,12 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       string,
       { usd: number }
     >;
+    // if paid account is failing use the open one
   } catch {
     const tokenUSDPricesResponse = await Promise.all(
       tokensAddresses.map(async (address) => {
         const token = await alchemy.core.getTokenMetadata(address);
+        // remove bad tokens and ignore peeps as metadata will be added manually
         if (
           address !== "0xba962a81f78837751be8a177378d582f337084e6" &&
           token.symbol &&
@@ -252,6 +307,7 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
     );
   }
 
+  // remove tokens without usd value
   const withPriceNonZeroBalances = nonZeroTokenBalances.filter(
     (token: TokenBalance) => {
       // price could be missing for peeps -- add it back in here if absent...
@@ -268,56 +324,56 @@ export const dataHandler = async (alchemyApi: string, addresses: string[]) => {
       return tokenUSDPrices[token.contractAddress]?.usd;
     }
   );
-
+  // fetch alchemy erc20 tokens metadata: decimals, symbol, etc we need decimals to convert values
   const metadataSet = await Promise.all(
     withPriceNonZeroBalances.map((item) =>
       alchemy.core.getTokenMetadata(item.contractAddress)
     )
   );
-
+  // create a variable to accumulate the total value of portfolio
   let totalValueInUSD = ethToken.value;
 
   const erc20Tokens: Array<TreasuryToken> = [];
   withPriceNonZeroBalances.forEach((item, index) => {
     // dirty filter out bitdao for now
-    if (metadataSet[index]?.name !== "BitDAO") {
-      const balanceInString = item.tokenBalance;
 
-      const balanceInNumber = balanceInString
-        ? balanceInString.startsWith("0x")
-          ? Number(
-              formatUnits(
-                BigInt(balanceInString),
-                metadataSet[index].decimals || 18
-              )
+    const balanceInString = item.tokenBalance;
+
+    const balanceInNumber = balanceInString
+      ? balanceInString.startsWith("0x")
+        ? Number(
+            formatUnits(
+              BigInt(balanceInString),
+              metadataSet[index].decimals || 18
             )
-          : Number(balanceInString)
-        : 0;
+          )
+        : Number(balanceInString)
+      : 0;
 
-      const erc20Token: TreasuryToken = {
-        address: getAddress(item.contractAddress),
-        parent: getAddress(item.parent),
-        amount: balanceInNumber,
-        name: `${item.isLP ? "UniV3LP " : ""}${metadataSet[index].name}` ?? "",
-        symbol: metadataSet[index].symbol ?? "",
-        decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
-        logo: metadataSet[index].logo?.length
-          ? (metadataSet[index].logo as string)
-          : metadataSet[index].symbol === "MNT"
-          ? "https://w3s.link/ipfs/bafybeiejli4rjcqvjsld4wprhylfa6uvhta5vhivauh3bc6x56hracob3i/token-logo.png"
-          : "",
-        price: tokenUSDPrices[item.contractAddress].usd || 0,
-        value:
-          balanceInNumber * (tokenUSDPrices[item.contractAddress].usd || 0),
-        perOfHoldings: "%",
-      };
+    const erc20Token: TreasuryToken = {
+      address: getAddress(item.contractAddress),
+      parent: getAddress(item.parent),
+      amount: balanceInNumber,
+      name: `${item.isLP ? "UniV3LP " : ""}${metadataSet[index].name}` ?? "",
+      symbol: item.isLP
+        ? `${metadataSet[index].symbol}(LP)`
+        : metadataSet[index].symbol ?? "",
+      decimals: metadataSet[index].decimals ?? 18, // TODO: double-check it
+      logo: metadataSet[index].logo?.length
+        ? (metadataSet[index].logo as string)
+        : "",
+      price: tokenUSDPrices[item.contractAddress].usd || 0,
+      value: balanceInNumber * (tokenUSDPrices[item.contractAddress].usd || 0),
+      perOfHoldings: "%",
+    };
 
-      erc20Tokens.push(erc20Token);
-      totalValueInUSD += erc20Token.value || 0;
-    }
+    erc20Tokens.push(erc20Token);
+    totalValueInUSD += erc20Token.value || 0;
   });
 
-  const portfolio = [...erc20Tokens, ethToken].map((token) => {
+  // cleanup tokens duplication and sum values
+  const erc20TokensMerge = reduceTokens(erc20Tokens);
+  const portfolio = [ethToken, ...erc20TokensMerge].map((token) => {
     token.perOfHoldings =
       Math.round((100 / totalValueInUSD) * token.value * 100) / 100 + "%";
 
@@ -353,7 +409,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     let addresses = undefined;
     if (req.query.addresses) {
-      addresses = (req.query.addresses as string).split(",");
+      addresses =
+        (req.query.addresses[0] as string).split(",") || req.query.addresses;
     } else {
       // addresses = [MANTLE_TREASURY_ADDRESS, BITDAO_LP_WALLET_ADDRESS];
       addresses = [MANTLE_TREASURY_ADDRESS];

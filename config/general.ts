@@ -1,5 +1,6 @@
 const TOKEN_CONTRACT_ADDRESS = "0x3c3a81e81dc49a522a592e7622a7e711c06bf354";
 const MANTLE_TREASURY_ADDRESS = "0x78605Df79524164911C144801f41e9811B7DB73D";
+const MANTLE_L2_TREASURY_ADDRESS = "0x94FEC56BBEcEaCC71c9e61623ACE9F8e1B1cf473";
 const BITDAO_LP_WALLET_ADDRESS = "0x5C128d25A21f681e678cB050E551A895c9309945";
 const MANTLE_CORE_WALLET_ADDRESS = "0x1B9Cef6Bdd029f378c511E5e6C20eE556b6781b9";
 
@@ -66,10 +67,55 @@ const BITDAO_LOCKED_ADDRESSES = [
 
 const USDT_CONTRACT_ADDRESS = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 
+const ERC20ABI = [
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    name: "ownerOf",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "mint",
+    outputs: [],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [
+      {
+        name: "_owner",
+        type: "address",
+      },
+    ],
+    name: "balanceOf",
+    outputs: [
+      {
+        name: "balance",
+        type: "uint256",
+      },
+    ],
+    payable: false,
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
 export {
   BITDAO_LOCKED_ADDRESSES,
   BITDAO_LP_WALLET_ADDRESS,
+  ERC20ABI,
   MANTLE_CORE_WALLET_ADDRESS,
+  MANTLE_L2_TREASURY_ADDRESS,
   MANTLE_TREASURY_ADDRESS,
   SWAGGER_DESCRIPTION,
   TOKEN_CONTRACT_ADDRESS,
